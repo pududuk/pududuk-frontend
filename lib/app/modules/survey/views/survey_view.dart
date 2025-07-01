@@ -188,36 +188,46 @@ class SurveyView extends GetView<SurveyController> {
             const SizedBox(height: 20),
             const Text('선호 음식', style: TextStyle(fontWeight: FontWeight.w500)),
             const SizedBox(height: 8),
-            TextField(
-              maxLines: 2,
-              decoration: InputDecoration(
-                hintText: "좋아하는 음식을 입력해주세요...",
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
+            Obx(
+              () => TextField(
+                maxLines: 2,
+                controller: TextEditingController(
+                  text: controller.preferredFoods.value,
                 ),
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
+                decoration: InputDecoration(
+                  hintText: "좋아하는 음식을 입력해주세요...",
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
                 ),
+                onChanged: (v) => controller.preferredFoods.value = v,
               ),
-              onChanged: (v) => controller.preferredFoods.value = v,
             ),
             const SizedBox(height: 20),
             const Text("비선호 음식", style: TextStyle(fontWeight: FontWeight.w500)),
             const SizedBox(height: 8),
-            TextField(
-              maxLines: 2,
-              decoration: InputDecoration(
-                hintText: '먹지 못하거나 선호하지 않는 음식을 입력해주세요...',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
+            Obx(
+              () => TextField(
+                maxLines: 2,
+                controller: TextEditingController(
+                  text: controller.restrictions.value,
                 ),
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
+                decoration: InputDecoration(
+                  hintText: '먹지 못하거나 선호하지 않는 음식을 입력해주세요...',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
                 ),
+                onChanged: (v) => controller.restrictions.value = v,
               ),
-              onChanged: (v) => controller.restrictions.value = v,
             ),
             const SizedBox(height: 20),
             Container(

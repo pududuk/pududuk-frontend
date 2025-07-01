@@ -1,10 +1,38 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../utils/app_colors.dart';
 import '../controllers/affiliation_controller.dart';
+import '../../survey/views/survey_view.dart';
+import '../../profile/views/profile_view.dart';
 
 class AffiliationView extends GetView<AffiliationController> {
   const AffiliationView({Key? key}) : super(key: key);
+
+  Future<void> _handleContinue() async {
+    final prefs = await SharedPreferences.getInstance();
+    final age = prefs.getString('survey_age') ?? '';
+    final gender = prefs.getString('survey_gender') ?? '';
+    final waitTime = prefs.getString('survey_waitTime') ?? '';
+    final nearby = prefs.getString('survey_nearby') ?? '';
+    final preferredFoods = prefs.getString('survey_preferredFoods') ?? '';
+    final restrictions = prefs.getString('survey_restrictions') ?? '';
+
+    if ([
+      age,
+      gender,
+      waitTime,
+      nearby,
+      preferredFoods,
+      restrictions,
+    ].every((v) => v.isEmpty)) {
+      // 모두 비어있으면 SurveyView로 이동
+      Get.toNamed('/survey');
+    } else {
+      // 하나라도 있으면 ProfileView로 이동
+      Get.toNamed('/profile');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -12,8 +40,13 @@ class AffiliationView extends GetView<AffiliationController> {
       appBar: AppBar(
         backgroundColor: AppColors.main,
         elevation: 0,
-
         centerTitle: true,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.settings, color: Colors.white),
+            onPressed: () => Get.toNamed('/survey'),
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
@@ -87,7 +120,9 @@ class AffiliationView extends GetView<AffiliationController> {
                 height: 48,
                 child: ElevatedButton(
                   onPressed:
-                      controller.selected.value.isNotEmpty ? () {} : null,
+                      controller.selected.value.isNotEmpty
+                          ? _handleContinue
+                          : null,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.main,
                     shape: RoundedRectangleBorder(
