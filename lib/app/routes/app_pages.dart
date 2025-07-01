@@ -1,4 +1,6 @@
 import 'package:get/get.dart';
+import 'package:pududuk_app/app/modules/survey/bindings/survey_binding.dart';
+import 'package:pududuk_app/app/modules/survey/views/survey_view.dart';
 import '../modules/home/bindings/home_binding.dart';
 import '../modules/home/views/home_view.dart';
 import '../modules/profile/bindings/profile_binding.dart';
@@ -28,6 +30,11 @@ class AppPages {
       name: Routes.SETTINGS,
       page: () => const SettingsView(),
       binding: SettingsBinding(),
+    ),
+    GetPage(
+      name: Routes.SURVEY,
+      page: () => const SurveyView(),
+      binding: SurveyBinding(),
     ),
   ];
 }

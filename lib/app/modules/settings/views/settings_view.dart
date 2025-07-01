@@ -10,46 +10,67 @@ class SettingsView extends GetView<SettingsController> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('설정'),
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        centerTitle: true,
+        actions: [Icon(Icons.settings)],
       ),
-      body: ListView(
+      body: Column(
         children: [
-          ListTile(
-            leading: const Icon(Icons.dark_mode),
-            title: const Text('다크 모드'),
-            trailing: Obx(
-              () => Switch(
-                value: controller.isDarkMode.value,
-                onChanged: (value) => controller.toggleDarkMode(),
-              ),
+          const SizedBox(height: 24),
+          const Icon(Icons.settings, size: 48, color: Colors.orange),
+          const SizedBox(height: 8),
+          const Text(
+            '앱 설정',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            '푸드득 앱의 다양한 설정을 변경하세요',
+            style: TextStyle(color: Colors.black54),
+          ),
+          const SizedBox(height: 16),
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.dark_mode),
+                  title: const Text('다크 모드'),
+                  trailing: Obx(
+                    () => Switch(
+                      value: controller.isDarkMode.value,
+                      onChanged: (value) => controller.toggleDarkMode(),
+                    ),
+                  ),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.notifications),
+                  title: const Text('알림'),
+                  trailing: Obx(
+                    () => Switch(
+                      value: controller.notificationsEnabled.value,
+                      onChanged: (value) => controller.toggleNotifications(),
+                    ),
+                  ),
+                ),
+                const Divider(),
+                ListTile(
+                  leading: const Icon(Icons.info),
+                  title: const Text('앱 정보'),
+                  onTap: () {
+                    Get.snackbar(
+                      '앱 정보',
+                      '푸드득 앱 v1.0.0',
+                      snackPosition: SnackPosition.BOTTOM,
+                    );
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.arrow_back),
+                  title: const Text('뒤로 가기'),
+                  onTap: () => Get.back(),
+                ),
+              ],
             ),
-          ),
-          ListTile(
-            leading: const Icon(Icons.notifications),
-            title: const Text('알림'),
-            trailing: Obx(
-              () => Switch(
-                value: controller.notificationsEnabled.value,
-                onChanged: (value) => controller.toggleNotifications(),
-              ),
-            ),
-          ),
-          const Divider(),
-          ListTile(
-            leading: const Icon(Icons.info),
-            title: const Text('앱 정보'),
-            onTap: () {
-              Get.snackbar(
-                '앱 정보',
-                '푸드득 앱 v1.0.0',
-                snackPosition: SnackPosition.BOTTOM,
-              );
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.arrow_back),
-            title: const Text('뒤로 가기'),
-            onTap: () => Get.back(),
           ),
         ],
       ),
