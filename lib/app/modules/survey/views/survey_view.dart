@@ -1,12 +1,25 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import '../controllers/survey_controller.dart';
 import 'package:flutter/cupertino.dart';
 import '../../../utils/app_colors.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class SurveyView extends GetView<SurveyController> {
   const SurveyView({Key? key}) : super(key: key);
+
+  Future<void> _saveSurveyToPrefs(SurveyController controller) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('survey_age', controller.age.value);
+    await prefs.setString('survey_gender', controller.gender.value);
+    await prefs.setString('survey_waitTime', controller.waitTime.value);
+    await prefs.setString('survey_nearby', controller.nearby.value);
+    await prefs.setString(
+      'survey_preferredFoods',
+      controller.preferredFoods.value,
+    );
+    await prefs.setString('survey_restrictions', controller.restrictions.value);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -211,7 +224,7 @@ class SurveyView extends GetView<SurveyController> {
               width: double.infinity,
               padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
               decoration: BoxDecoration(
-                color: AppColors.main.withOpacity(0.08),
+                color: AppColors.main.withAlpha((0.08 * 255).toInt()),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Row(
@@ -227,7 +240,15 @@ class SurveyView extends GetView<SurveyController> {
               width: double.infinity,
               height: 48,
               child: ElevatedButton(
-                onPressed: () {},
+                onPressed: () async {
+                  await _saveSurveyToPrefs(controller);
+                  // TODO: 저장 후 이동/알림 등 추가 가능
+                  Get.snackbar(
+                    '저장 완료',
+                    '설문 정보가 저장되었습니다.',
+                    snackPosition: SnackPosition.BOTTOM,
+                  );
+                },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.main,
                   shape: RoundedRectangleBorder(
@@ -258,7 +279,10 @@ class SurveyView extends GetView<SurveyController> {
         child: Container(
           height: 44,
           decoration: BoxDecoration(
-            color: selected ? AppColors.main.withOpacity(0.08) : Colors.white,
+            color:
+                selected
+                    ? AppColors.main.withAlpha((0.08 * 255).toInt())
+                    : Colors.white,
             border: Border.all(
               color: selected ? AppColors.main : Colors.grey.shade300,
               width: selected ? 2 : 1,

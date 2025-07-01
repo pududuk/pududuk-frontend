@@ -1,4 +1,6 @@
 import 'package:get/get.dart';
+import 'package:pududuk_app/app/modules/affiliation/bindings/affiliation_binding.dart';
+import 'package:pududuk_app/app/modules/affiliation/views/affiliation_view.dart';
 import 'package:pududuk_app/app/modules/survey/bindings/survey_binding.dart';
 import 'package:pududuk_app/app/modules/survey/views/survey_view.dart';
 import '../modules/home/bindings/home_binding.dart';
@@ -18,8 +20,8 @@ class AppPages {
   static final routes = [
     GetPage(
       name: Routes.HOME,
-      page: () => const HomeView(),
-      binding: HomeBinding(),
+      page: () => const AffiliationView(),
+      binding: AffiliationBinding(),
     ),
     GetPage(
       name: Routes.PROFILE,
