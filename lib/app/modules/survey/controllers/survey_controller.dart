@@ -9,8 +9,11 @@ class SurveyController extends GetxController {
   var nearby = 'yes'.obs;
   var preferredFoods = ''.obs;
   var restrictions = ''.obs;
+  var hasExistingData = false.obs;
 
   final ageController = TextEditingController(text: '25');
+  final preferredFoodsController = TextEditingController();
+  final restrictionsController = TextEditingController();
 
   @override
   void onInit() {
@@ -40,12 +43,22 @@ class SurveyController extends GetxController {
     waitTime.value = savedWaitTime;
     nearby.value = savedNearby;
     preferredFoods.value = savedPreferredFoods;
+    preferredFoodsController.text = savedPreferredFoods;
     restrictions.value = savedRestrictions;
+    restrictionsController.text = savedRestrictions;
+
+    // 기존 데이터가 있는지 확인 (성별, 선호음식, 제한사항 중 하나라도 있으면 기존 데이터로 간주)
+    hasExistingData.value =
+        savedGender.isNotEmpty ||
+        savedPreferredFoods.isNotEmpty ||
+        savedRestrictions.isNotEmpty;
   }
 
   @override
   void onClose() {
     ageController.dispose();
+    preferredFoodsController.dispose();
+    restrictionsController.dispose();
     super.onClose();
   }
 }

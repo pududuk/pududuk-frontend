@@ -27,16 +27,13 @@ class SurveyView extends GetView<SurveyController> {
       appBar: AppBar(
         elevation: 0,
         backgroundColor: AppColors.main,
+        iconTheme: const IconThemeData(color: Colors.white),
         title: Row(
           children: [
-            const Icon(Icons.restaurant_menu),
+            const Icon(Icons.restaurant_menu, color: Colors.white),
             const SizedBox(width: 8),
-            const Text('푸드득', style: TextStyle(color: Colors.black)),
+            const Text('푸드득', style: TextStyle(color: Colors.white)),
             const Spacer(),
-            IconButton(
-              icon: const Icon(Icons.account_circle),
-              onPressed: () {},
-            ),
           ],
         ),
       ),
@@ -188,46 +185,38 @@ class SurveyView extends GetView<SurveyController> {
             const SizedBox(height: 20),
             const Text('선호 음식', style: TextStyle(fontWeight: FontWeight.w500)),
             const SizedBox(height: 8),
-            Obx(
-              () => TextField(
-                maxLines: 2,
-                controller: TextEditingController(
-                  text: controller.preferredFoods.value,
+            TextField(
+              maxLines: 2,
+              controller: controller.preferredFoodsController,
+              decoration: InputDecoration(
+                hintText: "좋아하는 음식을 입력해주세요...",
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
                 ),
-                decoration: InputDecoration(
-                  hintText: "좋아하는 음식을 입력해주세요...",
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
-                  ),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
                 ),
-                onChanged: (v) => controller.preferredFoods.value = v,
               ),
+              onChanged: (v) => controller.preferredFoods.value = v,
             ),
             const SizedBox(height: 20),
             const Text("비선호 음식", style: TextStyle(fontWeight: FontWeight.w500)),
             const SizedBox(height: 8),
-            Obx(
-              () => TextField(
-                maxLines: 2,
-                controller: TextEditingController(
-                  text: controller.restrictions.value,
+            TextField(
+              maxLines: 2,
+              controller: controller.restrictionsController,
+              decoration: InputDecoration(
+                hintText: '먹지 못하거나 선호하지 않는 음식을 입력해주세요...',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
                 ),
-                decoration: InputDecoration(
-                  hintText: '먹지 못하거나 선호하지 않는 음식을 입력해주세요...',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
-                  ),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
                 ),
-                onChanged: (v) => controller.restrictions.value = v,
               ),
+              onChanged: (v) => controller.restrictions.value = v,
             ),
             const SizedBox(height: 20),
             Container(
@@ -246,28 +235,32 @@ class SurveyView extends GetView<SurveyController> {
               ),
             ),
             const SizedBox(height: 24),
-            SizedBox(
-              width: double.infinity,
-              height: 48,
-              child: ElevatedButton(
-                onPressed: () async {
-                  await _saveSurveyToPrefs(controller);
-                  // TODO: 저장 후 이동/알림 등 추가 가능
-                  Get.snackbar(
-                    '저장 완료',
-                    '설문 정보가 저장되었습니다.',
-                    snackPosition: SnackPosition.BOTTOM,
-                  );
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.main,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
+            Obx(
+              () => SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: ElevatedButton(
+                  onPressed: () async {
+                    await _saveSurveyToPrefs(controller);
+                    // TODO: 저장 후 이동/알림 등 추가 가능
+                    Get.snackbar(
+                      controller.hasExistingData.value ? '수정 완료' : '저장 완료',
+                      controller.hasExistingData.value
+                          ? '설문 정보가 수정되었습니다.'
+                          : '설문 정보가 저장되었습니다.',
+                      snackPosition: SnackPosition.BOTTOM,
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.main,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
                   ),
-                ),
-                child: const Text(
-                  'Continue',
-                  style: TextStyle(color: Colors.white, fontSize: 16),
+                  child: Text(
+                    controller.hasExistingData.value ? '수정하기' : '저장하기',
+                    style: const TextStyle(color: Colors.white, fontSize: 16),
+                  ),
                 ),
               ),
             ),
