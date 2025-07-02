@@ -107,33 +107,86 @@ class RecommendResultView extends GetView<RecommendResultController> {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 SizedBox(height: kIsWeb ? 4 : 12),
-                // 상단 트로피/완료 메시지
-                Column(
+                // Stack(추천 완료 메시지+지도 버튼) 가장 위에 배치
+                Stack(
                   children: [
-                    Container(
-                      decoration: BoxDecoration(
-                        color: AppColors.main.withAlpha(30),
-                        shape: BoxShape.circle,
-                      ),
-                      padding: const EdgeInsets.all(18),
-                      child: const Icon(
-                        Icons.emoji_events,
-                        color: AppColors.main,
-                        size: 40,
+                    // 중앙에 추천 완료 메시지
+                    Align(
+                      alignment: Alignment.center,
+                      child: Column(
+                        children: [
+                          // 트로피 아이콘
+                          Container(
+                            decoration: BoxDecoration(
+                              color: AppColors.main.withAlpha(30),
+                              shape: BoxShape.circle,
+                            ),
+                            padding: const EdgeInsets.all(18),
+                            child: const Icon(
+                              Icons.emoji_events,
+                              color: AppColors.main,
+                              size: 40,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          // 추천 완료! 텍스트
+                          const Text(
+                            '추천 완료!',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 22,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          const Text(
+                            '당신을 위한 맞춤 메뉴를 찾았어요',
+                            style: TextStyle(color: Colors.black54),
+                          ),
+                        ],
                       ),
                     ),
-                    const SizedBox(height: 16),
-                    const Text(
-                      '추천 완료!',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 22,
+                    // 오른쪽에 지도 버튼 - affiliation이 outside일 때만 노출
+                    Positioned(
+                      top: 0,
+                      right: 0,
+                      child: FutureBuilder<String?>(
+                        future: controller.getAffiliation(),
+                        builder: (context, snapshot) {
+                          if (snapshot.data == 'outside') {
+                            return Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                InkWell(
+                                  onTap: () {
+                                    Get.toNamed('/map_result');
+                                  },
+                                  borderRadius: BorderRadius.circular(20),
+                                  child: CircleAvatar(
+                                    radius: 16,
+                                    backgroundColor: AppColors.main.withAlpha(
+                                      30,
+                                    ),
+                                    child: const Icon(
+                                      Icons.map,
+                                      color: AppColors.main,
+                                      size: 20,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                const Text(
+                                  '지도로 보기',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey,
+                                  ),
+                                ),
+                              ],
+                            );
+                          }
+                          return SizedBox.shrink();
+                        },
                       ),
-                    ),
-                    const SizedBox(height: 6),
-                    const Text(
-                      '당신을 위한 맞춤 메뉴를 찾았어요',
-                      style: TextStyle(color: Colors.black54),
                     ),
                   ],
                 ),
@@ -255,6 +308,38 @@ class RecommendResultView extends GetView<RecommendResultController> {
                       ),
                     ),
                   ],
+                ),
+                // 사외일 때만 지도로 보기 버튼 노출
+                FutureBuilder<String?>(
+                  future: controller.getAffiliation(),
+                  builder: (context, snapshot) {
+                    if (snapshot.data == 'outside') {
+                      return Padding(
+                        padding: const EdgeInsets.only(top: 12),
+                        child: SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            onPressed: () => Get.toNamed('/map_result'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.main,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                            ),
+                            child: const Text(
+                              '지도로 보기',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    }
+                    return SizedBox.shrink();
+                  },
                 ),
                 const SizedBox(height: 12),
                 Row(

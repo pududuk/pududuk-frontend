@@ -21,7 +21,7 @@ class EnvConfig {
   static bool get enableAnalytics => dotenv.env['ENABLE_ANALYTICS'] == 'true';
 
   // External Services
-  static String get googleMapsApiKey => dotenv.env['GOOGLE_MAPS_API_KEY'] ?? '';
+  static String get naverMapsClientId => dotenv.env['NAVER_MAP_CLIENT_ID'] ?? '';
   static String get firebaseProjectId =>
       dotenv.env['FIREBASE_PROJECT_ID'] ?? '';
 
@@ -50,9 +50,6 @@ class EnvConfig {
       print('DB Name: $dbName');
       print('Debug Mode: $enableDebugMode');
       print('Analytics: $enableAnalytics');
-      print(
-        'Google Maps API Key: ${googleMapsApiKey.isNotEmpty ? "Set" : "Not Set"}',
-      );
       print(
         'Firebase Project ID: ${firebaseProjectId.isNotEmpty ? "Set" : "Not Set"}',
       );

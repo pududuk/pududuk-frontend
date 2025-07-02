@@ -6,6 +6,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter/foundation.dart';
 import 'dart:convert';
 import 'dart:io';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class RecommendResultController extends GetxController {
   // 1~3위 메뉴
@@ -122,5 +123,10 @@ class RecommendResultController extends GetxController {
     } catch (e) {
       Get.snackbar('오류', '이미지 공유에 실패했습니다: $e');
     }
+  }
+
+  Future<String?> getAffiliation() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('affiliation');
   }
 }

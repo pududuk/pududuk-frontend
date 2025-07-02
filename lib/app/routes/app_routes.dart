@@ -7,4 +7,5 @@ abstract class Routes {
   static const SETTINGS = '/settings';
   static const SURVEY = '/survey';
   static const RECOMMEND_RESULT = '/recommend_result';
+  static const MAP_RESULT = '/map_result';
 }

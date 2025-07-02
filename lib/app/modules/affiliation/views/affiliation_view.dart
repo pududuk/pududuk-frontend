@@ -179,7 +179,14 @@ class AffiliationView extends GetView<AffiliationController> {
                 child: ElevatedButton(
                   onPressed:
                       controller.selected.value.isNotEmpty
-                          ? _handleContinue
+                          ? () async {
+                            final prefs = await SharedPreferences.getInstance();
+                            await prefs.setString(
+                              'affiliation',
+                              controller.selected.value,
+                            );
+                            await _handleContinue();
+                          }
                           : null,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.main,
@@ -210,7 +217,11 @@ class AffiliationView extends GetView<AffiliationController> {
   }) {
     final isSelected = controller.selected.value == value;
     return GestureDetector(
-      onTap: () => controller.selected.value = value,
+      onTap: () async {
+        controller.selected.value = value;
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('affiliation', value);
+      },
       child: Container(
         width: double.infinity,
         padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 16),
@@ -255,7 +266,11 @@ class AffiliationView extends GetView<AffiliationController> {
               value: value,
               groupValue: controller.selected.value,
               activeColor: AppColors.main,
-              onChanged: (v) => controller.selected.value = v ?? '',
+              onChanged: (v) async {
+                controller.selected.value = v ?? '';
+                final prefs = await SharedPreferences.getInstance();
+                await prefs.setString('affiliation', v ?? '');
+              },
             ),
           ],
         ),
