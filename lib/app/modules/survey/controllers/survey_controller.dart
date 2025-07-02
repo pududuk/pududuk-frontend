@@ -4,7 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class SurveyController extends GetxController {
   var age = '25'.obs;
-  var gender = ''.obs;
+  var gender = 'male'.obs;
   var waitTime = 'yes'.obs;
   var nearby = 'yes'.obs;
   var preferredFoods = ''.obs;
@@ -31,7 +31,7 @@ class SurveyController extends GetxController {
     final prefs = await SharedPreferences.getInstance();
 
     final savedAge = prefs.getString('survey_age') ?? '25';
-    final savedGender = prefs.getString('survey_gender') ?? '';
+    final savedGender = prefs.getString('survey_gender') ?? 'male';
     final savedWaitTime = prefs.getString('survey_waitTime') ?? 'yes';
     final savedNearby = prefs.getString('survey_nearby') ?? 'yes';
     final savedPreferredFoods = prefs.getString('survey_preferredFoods') ?? '';

@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../utils/app_colors.dart';
+import '../../../utils/platform_utils.dart';
 import '../controllers/affiliation_controller.dart';
-import '../../survey/views/survey_view.dart';
-import '../../profile/views/profile_view.dart';
+import '../../../routes/app_pages.dart';
+import 'package:flutter/foundation.dart';
 
 class AffiliationView extends GetView<AffiliationController> {
   const AffiliationView({Key? key}) : super(key: key);
@@ -27,29 +28,86 @@ class AffiliationView extends GetView<AffiliationController> {
       restrictions,
     ].every((v) => v.isEmpty)) {
       // 모두 비어있으면 SurveyView로 이동
-      Get.toNamed('/survey');
+      Get.toNamed(Routes.SURVEY);
     } else {
-      // 하나라도 있으면 ProfileView로 이동
-      Get.toNamed('/profile');
+      // 하나라도 있으면 RecommendResultView로 이동
+      Get.toNamed(Routes.RECOMMEND_RESULT);
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final appBar = AppBar(
+      backgroundColor: AppColors.main,
+      elevation: 0,
+      centerTitle: true,
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.settings, color: Colors.white),
+          onPressed: () => Get.toNamed(Routes.SURVEY),
+        ),
+      ],
+    );
+
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: AppColors.main,
-        elevation: 0,
-        centerTitle: true,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.settings, color: Colors.white),
-            onPressed: () => Get.toNamed('/survey'),
-          ),
-        ],
-      ),
+      appBar:
+          kIsWeb
+              ? PreferredSize(
+                preferredSize: const Size.fromHeight(56),
+                child: Container(
+                  color: Colors.white,
+                  child: Center(
+                    child: Container(
+                      margin: const EdgeInsets.symmetric(
+                        horizontal: 100,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.main.withAlpha((0.92 * 255).toInt()),
+                        borderRadius: BorderRadius.circular(18),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.main.withAlpha(
+                              (0.08 * 255).toInt(),
+                            ),
+                            blurRadius: 12,
+                            offset: Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      height: 56,
+                      child: Row(
+                        children: [
+                          const SizedBox(width: 40), // leading 없음
+                          const Expanded(
+                            child: Center(
+                              child: Text(
+                                "LG's 푸드득",
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 20,
+                                ),
+                              ),
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(
+                              Icons.settings,
+                              color: Colors.white,
+                            ),
+                            onPressed: () => Get.toNamed(Routes.SURVEY),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              )
+              : appBar,
       body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+        padding: PlatformUtils.getResponsivePadding(),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [

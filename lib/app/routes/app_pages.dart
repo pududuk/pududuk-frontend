@@ -1,6 +1,8 @@
 import 'package:get/get.dart';
 import 'package:pududuk_app/app/modules/affiliation/bindings/affiliation_binding.dart';
 import 'package:pududuk_app/app/modules/affiliation/views/affiliation_view.dart';
+import 'package:pududuk_app/app/modules/recommend_result/bindings/recommend_result_binding.dart';
+import 'package:pududuk_app/app/modules/recommend_result/views/recommend_result_view.dart';
 import 'package:pududuk_app/app/modules/survey/bindings/survey_binding.dart';
 import 'package:pududuk_app/app/modules/survey/views/survey_view.dart';
 import '../modules/home/bindings/home_binding.dart';
@@ -37,6 +39,11 @@ class AppPages {
       name: Routes.SURVEY,
       page: () => const SurveyView(),
       binding: SurveyBinding(),
+    ),
+    GetPage(
+      name: Routes.RECOMMEND_RESULT,
+      page: () => const RecommendResultView(),
+      binding: RecommendResultBinding(),
     ),
   ];
 }

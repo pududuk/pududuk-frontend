@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:pududuk_app/app/routes/app_pages.dart';
 import '../controllers/survey_controller.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import '../../../utils/app_colors.dart';
+import '../../../utils/platform_utils.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class SurveyView extends GetView<SurveyController> {
@@ -24,21 +27,139 @@ class SurveyView extends GetView<SurveyController> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        elevation: 0,
-        backgroundColor: AppColors.main,
-        iconTheme: const IconThemeData(color: Colors.white),
-        title: Row(
-          children: [
-            const Icon(Icons.restaurant_menu, color: Colors.white),
-            const SizedBox(width: 8),
-            const Text('푸드득', style: TextStyle(color: Colors.white)),
-            const Spacer(),
-          ],
-        ),
-      ),
+      appBar:
+          kIsWeb
+              ? PreferredSize(
+                preferredSize: const Size.fromHeight(56),
+                child: Container(
+                  color: Colors.white,
+                  child: Center(
+                    child: Container(
+                      margin: const EdgeInsets.symmetric(
+                        horizontal: 100,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.main.withAlpha((0.92 * 255).toInt()),
+                        borderRadius: BorderRadius.circular(18),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.main.withAlpha(
+                              (0.08 * 255).toInt(),
+                            ),
+                            blurRadius: 12,
+                            offset: Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      height: 56,
+                      child: Row(
+                        children: [
+                          IconButton(
+                            icon: const Icon(
+                              Icons.arrow_back_ios_new,
+                              color: Colors.white,
+                            ),
+                            onPressed: () => Get.back(),
+                          ),
+                          const Expanded(
+                            child: Center(
+                              child: Text(
+                                '푸드득',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 20,
+                                ),
+                              ),
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(
+                              Icons.settings,
+                              color: Colors.white,
+                            ),
+                            onPressed: () => Get.toNamed('/survey'),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              )
+              : AppBar(
+                elevation: 0,
+                backgroundColor: AppColors.main,
+                automaticallyImplyLeading: !kIsWeb,
+                iconTheme: const IconThemeData(color: Colors.white),
+                centerTitle: kIsWeb,
+                leading:
+                    kIsWeb
+                        ? Padding(
+                          padding: EdgeInsets.only(left: 24),
+                          child: IconButton(
+                            icon: const Icon(
+                              Icons.arrow_back_ios_new,
+                              color: Colors.white,
+                            ),
+                            onPressed: () => Get.back(),
+                          ),
+                        )
+                        : null,
+                title: Padding(
+                  padding: EdgeInsets.symmetric(horizontal: kIsWeb ? 40 : 0),
+                  child:
+                      kIsWeb
+                          ? Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: const [
+                              Icon(Icons.restaurant_menu, color: Colors.white),
+                              SizedBox(width: 8),
+                              Text(
+                                '푸드득',
+                                style: TextStyle(color: Colors.white),
+                              ),
+                            ],
+                          )
+                          : Row(
+                            children: const [
+                              Icon(Icons.restaurant_menu, color: Colors.white),
+                              SizedBox(width: 8),
+                              Text(
+                                '푸드득',
+                                style: TextStyle(color: Colors.white),
+                              ),
+                              Spacer(),
+                            ],
+                          ),
+                ),
+                actions:
+                    kIsWeb
+                        ? [
+                          Padding(
+                            padding: EdgeInsets.only(right: 24),
+                            child: IconButton(
+                              icon: const Icon(
+                                Icons.settings,
+                                color: Colors.white,
+                              ),
+                              onPressed: () => Get.toNamed('/survey'),
+                            ),
+                          ),
+                        ]
+                        : [
+                          IconButton(
+                            icon: const Icon(
+                              Icons.settings,
+                              color: Colors.white,
+                            ),
+                            onPressed: () => Get.toNamed('/survey'),
+                          ),
+                        ],
+              ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+        padding: PlatformUtils.getResponsivePadding(),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -250,6 +371,7 @@ class SurveyView extends GetView<SurveyController> {
                           : '설문 정보가 저장되었습니다.',
                       snackPosition: SnackPosition.BOTTOM,
                     );
+                    Get.toNamed(Routes.RECOMMEND_RESULT);
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.main,
