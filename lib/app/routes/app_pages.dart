@@ -1,11 +1,14 @@
+import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 import 'package:pududuk_app/app/modules/affiliation/bindings/affiliation_binding.dart';
 import 'package:pududuk_app/app/modules/affiliation/views/affiliation_view.dart';
 import 'package:pududuk_app/app/modules/recommend_result/bindings/recommend_result_binding.dart';
-import 'package:pududuk_app/app/modules/recommend_result/views/map_result_view.dart';
+import 'package:pududuk_app/app/modules/recommend_result/views/map_result_conditional.dart';
 import 'package:pududuk_app/app/modules/recommend_result/views/recommend_result_view.dart';
 import 'package:pududuk_app/app/modules/survey/bindings/survey_binding.dart';
 import 'package:pududuk_app/app/modules/survey/views/survey_view.dart';
+import 'package:pududuk_app/app/modules/login/bindings/login_binding.dart';
+import 'package:pududuk_app/app/modules/login/views/login_view.dart';
 import '../modules/home/bindings/home_binding.dart';
 import '../modules/home/views/home_view.dart';
 import '../modules/profile/bindings/profile_binding.dart';
@@ -18,9 +21,14 @@ part 'app_routes.dart';
 class AppPages {
   AppPages._();
 
-  static const INITIAL = Routes.HOME;
+  static const INITIAL = Routes.LOGIN;
 
   static final routes = [
+    GetPage(
+      name: Routes.LOGIN,
+      page: () => const LoginView(),
+      binding: LoginBinding(),
+    ),
     GetPage(
       name: Routes.HOME,
       page: () => const AffiliationView(),
@@ -48,7 +56,7 @@ class AppPages {
     ),
     GetPage(
       name: Routes.MAP_RESULT,
-      page: () => const MapResultView(),
+      page: () => getConditionalMapView(),
       binding: RecommendResultBinding(),
     ),
   ];

@@ -16,7 +16,7 @@ class RecommendResultView extends GetView<RecommendResultController> {
             ? PreferredSize(
               preferredSize: const Size.fromHeight(56),
               child: Container(
-                color: Colors.white,
+                color: Colors.transparent,
                 child: Center(
                   child: Container(
                     margin: const EdgeInsets.symmetric(
@@ -454,6 +454,10 @@ class RecommendResultView extends GetView<RecommendResultController> {
     if (imagePath == null || imagePath.isEmpty) {
       return AssetImage('assets/image/default.png');
     } else if (imagePath.startsWith('http')) {
+      // 웹에서는 CORS 문제로 외부 이미지 사용 불가, 기본 이미지 사용
+      if (kIsWeb) {
+        return AssetImage('assets/image/default.png');
+      }
       return NetworkImage(imagePath);
     } else {
       return AssetImage(imagePath);

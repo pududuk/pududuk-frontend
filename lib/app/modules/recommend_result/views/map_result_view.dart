@@ -232,7 +232,7 @@ class _MapResultViewState extends State<MapResultView> {
                         );
 
                         // 검색어 변경 시 마커 즉시 업데이트 (지연 없음)
-                        if (isMapReady) {
+                        if (isMapReady && !kIsWeb) {
                           print('마커 즉시 업데이트 시작');
                           _forceUpdateMarkers();
 
@@ -258,7 +258,7 @@ class _MapResultViewState extends State<MapResultView> {
                                     controller.clearSearch();
 
                                     // 검색어 지우기 시 마커 즉시 업데이트
-                                    if (isMapReady) {
+                                    if (isMapReady && !kIsWeb) {
                                       _forceUpdateMarkers();
                                     }
                                   },
@@ -293,190 +293,287 @@ class _MapResultViewState extends State<MapResultView> {
 
                     return Container(
                       height: 250,
-                      child: Stack(
-                        children: [
-                          // 지도
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(16),
-                            child: NaverMap(
-                              options: NaverMapViewOptions(
-                                initialCameraPosition: NCameraPosition(
-                                  target: NLatLng(centerLat, centerLng),
-                                  zoom: 17,
-                                ),
-                                mapType: NMapType.basic,
-                                indoorEnable: false,
-                                // 지도 상호작용 활성화
-                                scrollGesturesEnable: true,
-                                zoomGesturesEnable: true,
-                                tiltGesturesEnable: true,
-                                rotationGesturesEnable: true,
-                                stopGesturesEnable: true,
-                                consumeSymbolTapEvents: false,
-                                // 컨트롤 버튼
-                                scaleBarEnable: true,
-                                indoorLevelPickerEnable: false,
-                                locationButtonEnable: false,
-                                logoClickEnable: false,
-                              ),
-                              onMapReady: (naverMapController) {
-                                mapController = naverMapController; // 컨트롤러 저장
-                                isMapReady = true; // 지도 준비 완료
-
-                                // 모든 메뉴 위치에 마커 추가
-                                _addMarkersToMap();
-
-                                // 선택된 메뉴가 있으면 해당 메뉴로 이동, 없으면 1위 메뉴로 이동
-                                if (selectedMenuIndex != null) {
-                                  _showSelectedMenuInfoWindow(
-                                    selectedMenuIndex!,
-                                  );
-                                } else {
-                                  _showFirstMenuInfoWindow();
-                                }
-                              },
-                              onMapTapped: (point, latLng) {
-                                // 지도 클릭 시 정보창 닫기
-                                _closeCurrentInfoWindow();
-                              },
-                            ),
-                          ),
-                          // 커스텀 줌 버튼들
-                          Positioned(
-                            top: 16,
-                            right: 16,
-                            child: GestureDetector(
-                              onTap: () {}, // 이벤트 전파 방지
-                              child: Column(
-                                children: [
-                                  // 줌 인 버튼
-                                  GestureDetector(
-                                    onTapDown:
-                                        (_) => setState(
-                                          () => isZoomInPressed = true,
-                                        ),
-                                    onTapUp:
-                                        (_) => setState(
-                                          () => isZoomInPressed = false,
-                                        ),
-                                    onTapCancel:
-                                        () => setState(
-                                          () => isZoomInPressed = false,
-                                        ),
-                                    onTap: () async {
-                                      if (isMapReady) {
-                                        // 정보창 닫기
-                                        await _closeCurrentInfoWindow();
-                                        // 현재 카메라 위치 가져오기
-                                        final cameraPosition =
-                                            await mapController
-                                                .getCameraPosition();
-                                        // 줌 인 (현재 줌 레벨 + 1)
-                                        await mapController.updateCamera(
-                                          NCameraUpdate.withParams(
-                                            target: cameraPosition.target,
-                                            zoom: cameraPosition.zoom + 1,
-                                          ),
-                                        );
-                                      }
-                                    },
-                                    child: AnimatedContainer(
-                                      duration: Duration(milliseconds: 100),
-                                      width: 40,
-                                      height: 40,
-                                      transform:
-                                          Matrix4.identity()..scale(
-                                            isZoomInPressed ? 0.95 : 1.0,
-                                          ),
-                                      decoration: BoxDecoration(
-                                        color: Colors.white,
-                                        borderRadius: BorderRadius.circular(8),
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color: Colors.black26,
-                                            blurRadius: isZoomInPressed ? 2 : 4,
-                                            offset: Offset(
-                                              0,
-                                              isZoomInPressed ? 1 : 2,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      child: Icon(
-                                        Icons.add,
-                                        size: 20,
-                                        color: Colors.black87,
-                                      ),
+                      child:
+                          kIsWeb
+                              ? // 웹에서는 지도 대신 대체 UI 표시
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(16),
+                                child: Container(
+                                  width: double.infinity,
+                                  height: 250,
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                      colors: [
+                                        AppColors.main.withOpacity(0.1),
+                                        AppColors.main.withOpacity(0.3),
+                                      ],
                                     ),
                                   ),
-                                  SizedBox(height: 8),
-                                  // 줌 아웃 버튼
-                                  GestureDetector(
-                                    onTapDown:
-                                        (_) => setState(
-                                          () => isZoomOutPressed = true,
-                                        ),
-                                    onTapUp:
-                                        (_) => setState(
-                                          () => isZoomOutPressed = false,
-                                        ),
-                                    onTapCancel:
-                                        () => setState(
-                                          () => isZoomOutPressed = false,
-                                        ),
-                                    onTap: () async {
-                                      if (isMapReady) {
-                                        // 정보창 닫기
-                                        await _closeCurrentInfoWindow();
-                                        // 현재 카메라 위치 가져오기
-                                        final cameraPosition =
-                                            await mapController
-                                                .getCameraPosition();
-                                        // 줌 아웃 (현재 줌 레벨 - 1)
-                                        await mapController.updateCamera(
-                                          NCameraUpdate.withParams(
-                                            target: cameraPosition.target,
-                                            zoom: cameraPosition.zoom - 1,
+                                  child: Center(
+                                    child: Column(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        Icon(
+                                          Icons.map_outlined,
+                                          size: 60,
+                                          color: AppColors.main.withOpacity(
+                                            0.7,
                                           ),
-                                        );
-                                      }
-                                    },
-                                    child: AnimatedContainer(
-                                      duration: Duration(milliseconds: 100),
-                                      width: 40,
-                                      height: 40,
-                                      transform:
-                                          Matrix4.identity()..scale(
-                                            isZoomOutPressed ? 0.95 : 1.0,
+                                        ),
+                                        SizedBox(height: 16),
+                                        Text(
+                                          '지도 기능',
+                                          style: TextStyle(
+                                            fontSize: 20,
+                                            fontWeight: FontWeight.bold,
+                                            color: AppColors.main,
                                           ),
-                                      decoration: BoxDecoration(
-                                        color: Colors.white,
-                                        borderRadius: BorderRadius.circular(8),
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color: Colors.black26,
-                                            blurRadius:
-                                                isZoomOutPressed ? 2 : 4,
-                                            offset: Offset(
-                                              0,
-                                              isZoomOutPressed ? 1 : 2,
+                                        ),
+                                        SizedBox(height: 8),
+                                        Text(
+                                          '모바일 앱에서 이용 가능합니다',
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            color: Colors.grey[600],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              )
+                              : // 모바일에서는 네이버 지도 표시
+                              Stack(
+                                children: [
+                                  // 지도
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(16),
+                                    child:
+                                        kIsWeb
+                                            ? Container(
+                                              color: Colors.grey[300],
+                                              child: Center(
+                                                child: Text('지도는 모바일에서만 지원됩니다'),
+                                              ),
+                                            )
+                                            : NaverMap(
+                                              options: NaverMapViewOptions(
+                                                initialCameraPosition:
+                                                    NCameraPosition(
+                                                      target: NLatLng(
+                                                        centerLat,
+                                                        centerLng,
+                                                      ),
+                                                      zoom: 17,
+                                                    ),
+                                                mapType: NMapType.basic,
+                                                indoorEnable: false,
+                                                // 지도 상호작용 활성화
+                                                scrollGesturesEnable: true,
+                                                zoomGesturesEnable: true,
+                                                tiltGesturesEnable: true,
+                                                rotationGesturesEnable: true,
+                                                stopGesturesEnable: true,
+                                                consumeSymbolTapEvents: false,
+                                                // 컨트롤 버튼
+                                                scaleBarEnable: true,
+                                                indoorLevelPickerEnable: false,
+                                                locationButtonEnable: false,
+                                                logoClickEnable: false,
+                                              ),
+                                              onMapReady: (naverMapController) {
+                                                mapController =
+                                                    naverMapController; // 컨트롤러 저장
+                                                isMapReady = true; // 지도 준비 완료
+
+                                                // 웹이 아닐 때만 지도 기능 실행
+                                                if (!kIsWeb) {
+                                                  // 모든 메뉴 위치에 마커 추가
+                                                  _addMarkersToMap();
+
+                                                  // 선택된 메뉴가 있으면 해당 메뉴로 이동, 없으면 1위 메뉴로 이동
+                                                  if (selectedMenuIndex !=
+                                                      null) {
+                                                    _showSelectedMenuInfoWindow(
+                                                      selectedMenuIndex!,
+                                                    );
+                                                  } else {
+                                                    _showFirstMenuInfoWindow();
+                                                  }
+                                                }
+                                              },
+                                              onMapTapped: (point, latLng) {
+                                                // 지도 클릭 시 정보창 닫기
+                                                _closeCurrentInfoWindow();
+                                              },
+                                            ),
+                                  ),
+                                  // 커스텀 줌 버튼들
+                                  Positioned(
+                                    top: 16,
+                                    right: 16,
+                                    child: GestureDetector(
+                                      onTap: () {}, // 이벤트 전파 방지
+                                      child: Column(
+                                        children: [
+                                          // 줌 인 버튼
+                                          GestureDetector(
+                                            onTapDown:
+                                                (_) => setState(
+                                                  () => isZoomInPressed = true,
+                                                ),
+                                            onTapUp:
+                                                (_) => setState(
+                                                  () => isZoomInPressed = false,
+                                                ),
+                                            onTapCancel:
+                                                () => setState(
+                                                  () => isZoomInPressed = false,
+                                                ),
+                                            onTap: () async {
+                                              if (isMapReady) {
+                                                // 정보창 닫기
+                                                await _closeCurrentInfoWindow();
+                                                // 현재 카메라 위치 가져오기
+                                                final cameraPosition =
+                                                    await mapController
+                                                        .getCameraPosition();
+                                                // 줌 인 (현재 줌 레벨 + 1)
+                                                await mapController
+                                                    .updateCamera(
+                                                      NCameraUpdate.withParams(
+                                                        target:
+                                                            cameraPosition
+                                                                .target,
+                                                        zoom:
+                                                            cameraPosition
+                                                                .zoom +
+                                                            1,
+                                                      ),
+                                                    );
+                                              }
+                                            },
+                                            child: AnimatedContainer(
+                                              duration: Duration(
+                                                milliseconds: 100,
+                                              ),
+                                              width: 40,
+                                              height: 40,
+                                              transform:
+                                                  Matrix4.identity()..scale(
+                                                    isZoomInPressed
+                                                        ? 0.95
+                                                        : 1.0,
+                                                  ),
+                                              decoration: BoxDecoration(
+                                                color: Colors.white,
+                                                borderRadius:
+                                                    BorderRadius.circular(8),
+                                                boxShadow: [
+                                                  BoxShadow(
+                                                    color: Colors.black26,
+                                                    blurRadius:
+                                                        isZoomInPressed ? 2 : 4,
+                                                    offset: Offset(
+                                                      0,
+                                                      isZoomInPressed ? 1 : 2,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                              child: Icon(
+                                                Icons.add,
+                                                size: 20,
+                                                color: Colors.black87,
+                                              ),
+                                            ),
+                                          ),
+                                          SizedBox(height: 8),
+                                          // 줌 아웃 버튼
+                                          GestureDetector(
+                                            onTapDown:
+                                                (_) => setState(
+                                                  () => isZoomOutPressed = true,
+                                                ),
+                                            onTapUp:
+                                                (_) => setState(
+                                                  () =>
+                                                      isZoomOutPressed = false,
+                                                ),
+                                            onTapCancel:
+                                                () => setState(
+                                                  () =>
+                                                      isZoomOutPressed = false,
+                                                ),
+                                            onTap: () async {
+                                              if (isMapReady) {
+                                                // 정보창 닫기
+                                                await _closeCurrentInfoWindow();
+                                                // 현재 카메라 위치 가져오기
+                                                final cameraPosition =
+                                                    await mapController
+                                                        .getCameraPosition();
+                                                // 줌 아웃 (현재 줌 레벨 - 1)
+                                                await mapController
+                                                    .updateCamera(
+                                                      NCameraUpdate.withParams(
+                                                        target:
+                                                            cameraPosition
+                                                                .target,
+                                                        zoom:
+                                                            cameraPosition
+                                                                .zoom -
+                                                            1,
+                                                      ),
+                                                    );
+                                              }
+                                            },
+                                            child: AnimatedContainer(
+                                              duration: Duration(
+                                                milliseconds: 100,
+                                              ),
+                                              width: 40,
+                                              height: 40,
+                                              transform:
+                                                  Matrix4.identity()..scale(
+                                                    isZoomOutPressed
+                                                        ? 0.95
+                                                        : 1.0,
+                                                  ),
+                                              decoration: BoxDecoration(
+                                                color: Colors.white,
+                                                borderRadius:
+                                                    BorderRadius.circular(8),
+                                                boxShadow: [
+                                                  BoxShadow(
+                                                    color: Colors.black26,
+                                                    blurRadius:
+                                                        isZoomOutPressed
+                                                            ? 2
+                                                            : 4,
+                                                    offset: Offset(
+                                                      0,
+                                                      isZoomOutPressed ? 1 : 2,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                              child: Icon(
+                                                Icons.remove,
+                                                size: 20,
+                                                color: Colors.black87,
+                                              ),
                                             ),
                                           ),
                                         ],
-                                      ),
-                                      child: Icon(
-                                        Icons.remove,
-                                        size: 20,
-                                        color: Colors.black87,
                                       ),
                                     ),
                                   ),
                                 ],
                               ),
-                            ),
-                          ),
-                        ],
-                      ),
                     );
                   }),
                 ],
@@ -721,7 +818,7 @@ class _MapResultViewState extends State<MapResultView> {
   // 마커 강제 업데이트 함수
   Future<void> _forceUpdateMarkers() async {
     print('=== 마커 강제 업데이트 시작 ===');
-    if (!isMapReady) return;
+    if (!isMapReady || kIsWeb) return;
 
     try {
       // 1. 모든 오버레이 완전 제거 (빠른 제거)
@@ -1276,6 +1373,10 @@ class _MapResultViewState extends State<MapResultView> {
     if (imagePath == null || imagePath.isEmpty) {
       return AssetImage('assets/image/default.png');
     } else if (imagePath.startsWith('http')) {
+      // 웹에서는 CORS 문제로 외부 이미지 사용 불가, 기본 이미지 사용
+      if (kIsWeb) {
+        return AssetImage('assets/image/default.png');
+      }
       return NetworkImage(imagePath);
     } else {
       return AssetImage(imagePath);
@@ -1450,7 +1551,7 @@ class _MapResultViewState extends State<MapResultView> {
 
   // 지도 위치 이동 함수
   void _moveToLocation(Map item) async {
-    if (!isMapReady) return;
+    if (!isMapReady || kIsWeb) return;
 
     try {
       final latValue = item['latitude'];

@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'app/routes/app_pages.dart';
 import 'app/utils/env_config.dart';
+import 'package:pududuk_app/app/services/api_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -12,8 +13,13 @@ void main() async {
   // 환경 변수 로드
   await EnvConfig.load();
 
-  // 네이버 지도 초기화 (env_config에서 clientId를 불러오거나 기본값 사용)
-  await FlutterNaverMap().init(clientId: EnvConfig.naverMapsClientId);
+  // API 서비스 초기화
+  Get.put(ApiService());
+
+  // 네이버 지도 초기화 (웹이 아닌 경우에만)
+  if (!kIsWeb) {
+    await FlutterNaverMap().init(clientId: EnvConfig.naverMapsClientId);
+  }
 
   // 디버그 모드일 때 환경 변수 출력
   EnvConfig.printAllEnv();
