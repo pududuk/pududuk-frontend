@@ -196,7 +196,7 @@ class AffiliationView extends GetView<AffiliationController> {
                     elevation: 0,
                   ),
                   child: const Text(
-                    '계속하기',
+                    '추천받기',
                     style: TextStyle(color: Colors.white, fontSize: 16),
                   ),
                 ),

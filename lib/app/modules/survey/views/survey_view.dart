@@ -75,13 +75,6 @@ class SurveyView extends GetView<SurveyController> {
                               ),
                             ),
                           ),
-                          IconButton(
-                            icon: const Icon(
-                              Icons.settings,
-                              color: Colors.white,
-                            ),
-                            onPressed: () => Get.toNamed('/survey'),
-                          ),
                         ],
                       ),
                     ),

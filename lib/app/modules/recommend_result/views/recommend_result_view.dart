@@ -158,7 +158,10 @@ class RecommendResultView extends GetView<RecommendResultController> {
                               children: [
                                 InkWell(
                                   onTap: () {
-                                    Get.toNamed('/map_result');
+                                    Get.toNamed(
+                                      '/map_result',
+                                      arguments: {'selectedMenuIndex': 0},
+                                    ); // 기본값: 1위 메뉴
                                   },
                                   borderRadius: BorderRadius.circular(20),
                                   child: CircleAvatar(
@@ -192,63 +195,34 @@ class RecommendResultView extends GetView<RecommendResultController> {
                 ),
                 const SizedBox(height: 24),
                 // 1~3위 메뉴 썸네일
-                Obx(
-                  () => Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: List.generate(3, (i) {
-                      final menu = controller.topMenus[i];
-                      return Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 8),
-                        child: Column(
-                          children: [
-                            Stack(
-                              alignment: Alignment.topRight,
-                              children: [
-                                CircleAvatar(
-                                  radius: i == 1 ? 38 : 32,
-                                  backgroundColor:
-                                      i == 1
-                                          ? AppColors.main
-                                          : Colors.grey[200],
-                                  child: CircleAvatar(
-                                    radius: i == 1 ? 34 : 28,
-                                    backgroundImage: AssetImage(
-                                      menu['image'] as String,
-                                    ),
-                                  ),
-                                ),
-                                if (i == 1)
-                                  Positioned(
-                                    top: 0,
-                                    right: 0,
-                                    child: Icon(
-                                      Icons.emoji_events,
-                                      color: Colors.amber,
-                                      size: 24,
-                                    ),
-                                  ),
-                              ],
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              menu['name'] as String,
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14,
-                              ),
-                            ),
-                            Text(
-                              '${menu['score']}점',
-                              style: TextStyle(
-                                color: AppColors.main,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
+                FutureBuilder<String?>(
+                  future: controller.getAffiliation(),
+                  builder: (context, snapshot) {
+                    final isOutside = snapshot.data == 'outside';
+                    return Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        // 2위 (왼쪽)
+                        _buildMenuThumbnail(
+                          controller.topMenus[1],
+                          1,
+                          isOutside,
                         ),
-                      );
-                    }),
-                  ),
+                        // 1위 (가운데)
+                        _buildMenuThumbnail(
+                          controller.topMenus[0],
+                          0,
+                          isOutside,
+                        ),
+                        // 3위 (오른쪽)
+                        _buildMenuThumbnail(
+                          controller.topMenus[2],
+                          2,
+                          isOutside,
+                        ),
+                      ],
+                    );
+                  },
                 ),
                 const SizedBox(height: 24),
                 // 다른 추천 메뉴
@@ -260,32 +234,81 @@ class RecommendResultView extends GetView<RecommendResultController> {
                   ),
                 ),
                 const SizedBox(height: 12),
-                Obx(
-                  () => ListView.separated(
-                    shrinkWrap: true,
-                    physics: NeverScrollableScrollPhysics(),
-                    itemCount: controller.otherMenus.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 8),
-                    itemBuilder: (context, idx) {
-                      final menu = controller.otherMenus[idx];
-                      return Card(
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: ListTile(
-                          leading: CircleAvatar(
-                            backgroundImage: AssetImage(
-                              menu['image'] as String,
-                            ),
-                            radius: 22,
+                FutureBuilder<String?>(
+                  future: controller.getAffiliation(),
+                  builder: (context, snapshot) {
+                    final isOutside = snapshot.data == 'outside';
+                    return ListView.separated(
+                      shrinkWrap: true,
+                      physics: NeverScrollableScrollPhysics(),
+                      itemCount: controller.otherMenus.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 8),
+                      itemBuilder: (context, idx) {
+                        final menu = controller.otherMenus[idx];
+                        return Card(
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
                           ),
-                          title: Text('${menu['rank']}. ${menu['name']}'),
-                          subtitle: Text('${menu['score']}점'),
-                          onTap: () {},
-                        ),
-                      );
-                    },
-                  ),
+                          child: ListTile(
+                            leading: CircleAvatar(
+                              backgroundImage:
+                                  (menu['image'] != null &&
+                                          (menu['image'] as String).isNotEmpty)
+                                      ? getMenuImage(menu['image'] as String?)
+                                      : null,
+                              child:
+                                  (menu['image'] == null ||
+                                          (menu['image'] as String).isEmpty)
+                                      ? Icon(
+                                        Icons.restaurant,
+                                        color: Colors.grey[600],
+                                      )
+                                      : null,
+                              radius: 22,
+                            ),
+                            title: SizedBox(
+                              width: 120,
+                              child: Text(
+                                '\t${menu['rank']}. ${menu['name']}',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                softWrap: false,
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 15,
+                                ),
+                              ),
+                            ),
+                            subtitle: Text(
+                              '${menu['score']}점',
+                              style: TextStyle(fontSize: 13),
+                            ),
+                            trailing:
+                                (menu['price'] != null &&
+                                        (menu['price'] as String).isNotEmpty)
+                                    ? Text(
+                                      '₩${menu['price'] as String}',
+                                      style: TextStyle(
+                                        color: Colors.black87,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 14,
+                                      ),
+                                    )
+                                    : null,
+                            onTap:
+                                isOutside
+                                    ? () => Get.toNamed(
+                                      '/map_result',
+                                      arguments: {
+                                        'selectedMenuIndex': menu['rank'] - 1,
+                                      },
+                                    )
+                                    : null,
+                          ),
+                        );
+                      },
+                    );
+                  },
                 ),
                 const SizedBox(height: 24),
                 // 하단 버튼
@@ -308,38 +331,6 @@ class RecommendResultView extends GetView<RecommendResultController> {
                       ),
                     ),
                   ],
-                ),
-                // 사외일 때만 지도로 보기 버튼 노출
-                FutureBuilder<String?>(
-                  future: controller.getAffiliation(),
-                  builder: (context, snapshot) {
-                    if (snapshot.data == 'outside') {
-                      return Padding(
-                        padding: const EdgeInsets.only(top: 12),
-                        child: SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton(
-                            onPressed: () => Get.toNamed('/map_result'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.main,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                            ),
-                            child: const Text(
-                              '지도로 보기',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 16,
-                              ),
-                            ),
-                          ),
-                        ),
-                      );
-                    }
-                    return SizedBox.shrink();
-                  },
                 ),
                 const SizedBox(height: 12),
                 Row(
@@ -368,5 +359,104 @@ class RecommendResultView extends GetView<RecommendResultController> {
         ),
       ),
     );
+  }
+
+  // 메뉴 썸네일 위젯 생성 함수
+  Widget _buildMenuThumbnail(Map menu, int index, bool isOutside) {
+    return GestureDetector(
+      onTap:
+          isOutside
+              ? () => Get.toNamed(
+                '/map_result',
+                arguments: {'selectedMenuIndex': index},
+              )
+              : null,
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: 8),
+        child: Column(
+          children: [
+            Stack(
+              alignment: Alignment.topRight,
+              children: [
+                CircleAvatar(
+                  radius: index == 0 ? 38 : 32, // 1위(index 0)가 가장 큼
+                  backgroundColor:
+                      index == 0 ? AppColors.main : Colors.grey[200],
+                  child: CircleAvatar(
+                    radius: index == 0 ? 34 : 28,
+                    backgroundImage:
+                        (menu['image'] != null &&
+                                (menu['image'] as String).isNotEmpty)
+                            ? getMenuImage(menu['image'] as String?)
+                            : null,
+                    child:
+                        (menu['image'] == null ||
+                                (menu['image'] as String).isEmpty)
+                            ? Icon(Icons.restaurant, color: Colors.grey[600])
+                            : null,
+                  ),
+                ),
+                if (index == 0) // 1위에만 왕관
+                  Positioned(
+                    top: 0,
+                    right: 0,
+                    child: Icon(
+                      Icons.emoji_events,
+                      color: Colors.amber,
+                      size: 24,
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            SizedBox(
+              width: 80,
+              child: Text(
+                menu['name'] as String,
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+                softWrap: true,
+                textAlign: TextAlign.center,
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+              ),
+            ),
+            Text(
+              '${menu['score']}점',
+              style: TextStyle(
+                color: AppColors.main,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            // 가격 영역을 고정 높이로 설정하여 모든 메뉴의 높이를 동일하게 유지
+            SizedBox(
+              height: 20, // 고정 높이
+              child:
+                  (menu['price'] != null &&
+                          (menu['price'] as String).isNotEmpty)
+                      ? Text(
+                        '₩${menu['price'] as String}',
+                        style: TextStyle(
+                          color: Colors.black87,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      )
+                      : SizedBox.shrink(), // 가격이 없어도 높이는 유지
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // 이미지 프로바이더 분기 함수
+  ImageProvider getMenuImage(String? imagePath) {
+    if (imagePath == null || imagePath.isEmpty) {
+      return AssetImage('assets/image/default.png');
+    } else if (imagePath.startsWith('http')) {
+      return NetworkImage(imagePath);
+    } else {
+      return AssetImage(imagePath);
+    }
   }
 }
