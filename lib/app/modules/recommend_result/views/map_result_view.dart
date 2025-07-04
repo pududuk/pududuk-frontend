@@ -729,7 +729,7 @@ class _MapResultViewState extends State<MapResultView> {
           if (!lat.isNaN && !lat.isInfinite && !lng.isNaN && !lng.isInfinite) {
             // 1위 메뉴 정보창 생성 및 표시
             final infoText =
-                '1위. ${firstMenu['name']}\n${firstMenu['score']}점${firstMenu['price'] != null && (firstMenu['price'] as String).isNotEmpty ? ' • ₩${firstMenu['price']}' : ''}';
+                '1위. ${firstMenu['name']}\n${firstMenu['score']}점${firstMenu['price'] != null && (firstMenu['price'] as String).isNotEmpty ? ' • ${firstMenu['price']}' : ''}';
 
             final infoWindow = NInfoWindow.onMap(
               id: 'info_0',
@@ -785,7 +785,7 @@ class _MapResultViewState extends State<MapResultView> {
             // 선택된 메뉴 정보창 생성 및 표시
             final rank = menuIndex + 1;
             final infoText =
-                '$rank위. ${selectedMenu['name']}\n${selectedMenu['score']}점${selectedMenu['price'] != null && (selectedMenu['price'] as String).isNotEmpty ? ' • ₩${selectedMenu['price']}' : ''}';
+                '$rank위. ${selectedMenu['name']}\n${selectedMenu['score']}점${selectedMenu['price'] != null && (selectedMenu['price'] as String).isNotEmpty ? ' • ${selectedMenu['price']}' : ''}';
 
             final infoWindow = NInfoWindow.onMap(
               id: 'info_$menuIndex',
@@ -1088,7 +1088,7 @@ class _MapResultViewState extends State<MapResultView> {
           // 검색 상태에 따라 순위 표시 조정
           final displayRank = filteredIndex + 1; // 필터링된 결과에서의 순위 (1, 2, 3...)
           final infoText =
-              '$displayRank위. ${menu['name']}\n${menu['score']}점${menu['price'] != null && (menu['price'] as String).isNotEmpty ? ' • ₩${menu['price']}' : ''}';
+              '$displayRank위. ${menu['name']}\n${menu['score']}점${menu['price'] != null && (menu['price'] as String).isNotEmpty ? ' • ${menu['price']}' : ''}';
           final infoWindow = NInfoWindow.onMap(
             id: 'info_$filteredIndex',
             text: infoText,
@@ -1130,7 +1130,7 @@ class _MapResultViewState extends State<MapResultView> {
 
           if (!lat.isNaN && !lat.isInfinite && !lng.isNaN && !lng.isInfinite) {
             final infoText =
-                '1위. ${firstMenu['name']}\n${firstMenu['score']}점${firstMenu['price'] != null && (firstMenu['price'] as String).isNotEmpty ? ' • ₩${firstMenu['price']}' : ''}';
+                '1위. ${firstMenu['name']}\n${firstMenu['score']}점${firstMenu['price'] != null && (firstMenu['price'] as String).isNotEmpty ? ' • ${firstMenu['price']}' : ''}';
 
             final infoWindow = NInfoWindow.onMap(
               id: 'info_0',
@@ -1195,7 +1195,7 @@ class _MapResultViewState extends State<MapResultView> {
           await Future.delayed(Duration(milliseconds: 300));
 
           final infoText =
-              '1위. ${firstMenu['name']}\n${firstMenu['score']}점${firstMenu['price'] != null && (firstMenu['price'] as String).isNotEmpty ? ' • ₩${firstMenu['price']}' : ''}';
+              '1위. ${firstMenu['name']}\n${firstMenu['score']}점${firstMenu['price'] != null && (firstMenu['price'] as String).isNotEmpty ? ' • ${firstMenu['price']}' : ''}';
 
           final infoWindow = NInfoWindow.onMap(
             id: 'info_0',
@@ -1345,7 +1345,7 @@ class _MapResultViewState extends State<MapResultView> {
 
           // 새로운 정보창 생성 및 열기 (마커 바로 위에 표시)
           final infoText =
-              '${i + 1}위. ${menu['name']}\n${menu['score']}점${menu['price'] != null && (menu['price'] as String).isNotEmpty ? ' • ₩${menu['price']}' : ''}';
+              '${i + 1}위. ${menu['name']}\n${menu['score']}점${menu['price'] != null && (menu['price'] as String).isNotEmpty ? ' • ${menu['price']}' : ''}';
 
           final infoWindow = NInfoWindow.onMap(
             id: 'info_$i',
@@ -1461,7 +1461,7 @@ class _MapResultViewState extends State<MapResultView> {
                   if (item['menu'] != null) Text('${item['menu']}'),
                   if (item['price'] != null || item['sale'] != null)
                     Text(
-                      '${item['price'] != null ? '₩${item['price']}' : ''}  ${item['sale'] ?? ''}',
+                      '${item['price'] != null ? '${item['price']}' : ''}  ${item['sale'] ?? ''}',
                       style: TextStyle(fontWeight: FontWeight.w500),
                     ),
                   if (item['desc'] != null)
@@ -1508,7 +1508,7 @@ class _MapResultViewState extends State<MapResultView> {
           children: [
             if (item['price'] != null && (item['price'] as String).isNotEmpty)
               Text(
-                '₩${item['price']}',
+                '${item['price']}',
                 style: TextStyle(
                   fontWeight: FontWeight.w600,
                   color: Colors.black,
@@ -1629,7 +1629,7 @@ class _MapResultViewState extends State<MapResultView> {
           }
 
           final infoText =
-              '$displayRank위. ${item['name']}\n${item['score']}점${item['price'] != null && (item['price'] as String).isNotEmpty ? ' • ₩${item['price']}' : ''}';
+              '$displayRank위. ${item['name']}\n${item['score']}점${item['price'] != null && (item['price'] as String).isNotEmpty ? ' • ${item['price']}' : ''}';
 
           final infoWindow = NInfoWindow.onMap(
             id: markerId,

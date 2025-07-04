@@ -192,100 +192,464 @@ class RecommendResultView extends GetView<RecommendResultController> {
                 // 1~3위 메뉴 썸네일
                 Obx(() {
                   final isOutside = controller.isOutside;
-                  return Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      // 2위 (왼쪽)
-                      _buildMenuThumbnail(controller.topMenus[1], 1, isOutside),
-                      // 1위 (가운데)
-                      _buildMenuThumbnail(controller.topMenus[0], 0, isOutside),
-                      // 3위 (오른쪽)
-                      _buildMenuThumbnail(controller.topMenus[2], 2, isOutside),
-                    ],
-                  );
-                }),
-                const SizedBox(height: 24),
-                // 다른 추천 메뉴
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    '다른 추천 메뉴',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Obx(() {
-                  final isOutside = controller.isOutside;
-                  return ListView.separated(
-                    shrinkWrap: true,
-                    physics: NeverScrollableScrollPhysics(),
-                    itemCount: controller.otherMenus.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 8),
-                    itemBuilder: (context, idx) {
-                      final menu = controller.otherMenus[idx];
-                      return Card(
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: ListTile(
-                          leading: CircleAvatar(
-                            backgroundImage:
-                                (menu['image'] != null &&
-                                        (menu['image'] as String).isNotEmpty)
-                                    ? getMenuImage(menu['image'] as String?)
-                                    : null,
-                            child:
-                                (menu['image'] == null ||
-                                        (menu['image'] as String).isEmpty)
-                                    ? Icon(
-                                      Icons.restaurant,
-                                      color: Colors.grey[600],
-                                    )
-                                    : null,
-                            radius: 22,
-                          ),
-                          title: SizedBox(
-                            width: 120,
-                            child: Text(
-                              '\t${menu['rank']}. ${menu['name']}',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              softWrap: false,
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 15,
-                              ),
-                            ),
-                          ),
-                          subtitle: Text(
-                            '${menu['score']}점',
-                            style: TextStyle(fontSize: 13),
-                          ),
-                          trailing:
-                              (menu['price'] != null &&
-                                      (menu['price'] as String).isNotEmpty)
-                                  ? Text(
-                                    '₩${menu['price'] as String}',
-                                    style: TextStyle(
-                                      color: Colors.black87,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 14,
+                  final isInside = controller.isInside;
+
+                  if (controller.isLoading.value ||
+                      controller.topMenus.isEmpty) {
+                    return Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(40),
+                        child: CircularProgressIndicator(color: AppColors.main),
+                      ),
+                    );
+                  }
+
+                  if (isInside) {
+                    // 사내 추천 - 상위 3개를 카드 형태로 표시
+                    final top3 = controller.topMenus.take(3).toList();
+                    return Column(
+                      children:
+                          top3.map((menu) {
+                            final index = top3.indexOf(menu);
+                            return Container(
+                              margin: EdgeInsets.only(bottom: 12),
+                              child: Card(
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                elevation: index == 0 ? 4 : 2, // 1위는 더 강조
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(12),
+                                    gradient:
+                                        index == 0
+                                            ? LinearGradient(
+                                              colors: [
+                                                AppColors.main.withOpacity(0.1),
+                                                Colors.white,
+                                              ],
+                                              begin: Alignment.topLeft,
+                                              end: Alignment.bottomRight,
+                                            )
+                                            : null,
+                                  ),
+                                  child: Padding(
+                                    padding: EdgeInsets.all(16),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            Container(
+                                              width: 40,
+                                              height: 40,
+                                              decoration: BoxDecoration(
+                                                color:
+                                                    index == 0
+                                                        ? AppColors.main
+                                                        : Colors.grey[400],
+                                                borderRadius:
+                                                    BorderRadius.circular(20),
+                                              ),
+                                              child: Center(
+                                                child:
+                                                    index == 0
+                                                        ? Icon(
+                                                          Icons.emoji_events,
+                                                          color: Colors.white,
+                                                          size: 24,
+                                                        )
+                                                        : Text(
+                                                          '${index + 1}',
+                                                          style: TextStyle(
+                                                            color: Colors.white,
+                                                            fontWeight:
+                                                                FontWeight.bold,
+                                                            fontSize: 18,
+                                                          ),
+                                                        ),
+                                              ),
+                                            ),
+                                            SizedBox(width: 16),
+                                            Expanded(
+                                              child: Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(
+                                                    '${menu['store']} ${menu['corner']}',
+                                                    style: TextStyle(
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                      fontSize: 16,
+                                                    ),
+                                                  ),
+                                                  SizedBox(height: 4),
+                                                  Row(
+                                                    children: [
+                                                      Icon(
+                                                        Icons.access_time,
+                                                        size: 14,
+                                                        color: Colors.grey,
+                                                      ),
+                                                      SizedBox(width: 4),
+                                                      Text(
+                                                        '대기시간 ${menu['waiting_pred']}분',
+                                                        style: TextStyle(
+                                                          color: Colors.grey,
+                                                          fontSize: 12,
+                                                        ),
+                                                      ),
+                                                      SizedBox(width: 12),
+                                                      Icon(
+                                                        Icons.star,
+                                                        size: 14,
+                                                        color: Colors.amber,
+                                                      ),
+                                                      SizedBox(width: 4),
+                                                      Text(
+                                                        '${menu['score']}점',
+                                                        style: TextStyle(
+                                                          color: Colors.grey,
+                                                          fontSize: 12,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        SizedBox(height: 12),
+                                        Text(
+                                          '메뉴: ${menu['menu']}',
+                                          style: TextStyle(fontSize: 14),
+                                        ),
+                                        SizedBox(height: 8),
+                                        Container(
+                                          padding: EdgeInsets.all(8),
+                                          decoration: BoxDecoration(
+                                            color: AppColors.main.withOpacity(
+                                              0.1,
+                                            ),
+                                            borderRadius: BorderRadius.circular(
+                                              8,
+                                            ),
+                                          ),
+                                          child: Row(
+                                            children: [
+                                              Icon(
+                                                Icons.chat_bubble_outline,
+                                                size: 16,
+                                                color: AppColors.main,
+                                              ),
+                                              SizedBox(width: 8),
+                                              Expanded(
+                                                child: Text(
+                                                  menu['comment'] ?? '',
+                                                  style: TextStyle(
+                                                    color: AppColors.main,
+                                                    fontSize: 13,
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
                                     ),
-                                  )
-                                  : null,
-                          onTap:
-                              isOutside
-                                  ? () => Get.toNamed(
-                                    '/map_result',
-                                    arguments: {
-                                      'selectedMenuIndex': menu['rank'] - 1,
-                                    },
-                                  )
-                                  : null,
+                                  ),
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                    );
+                  } else {
+                    // 사외 추천 - 기존 썸네일 방식
+                    if (controller.topMenus.length < 3) {
+                      return Center(
+                        child: Padding(
+                          padding: EdgeInsets.all(40),
+                          child: CircularProgressIndicator(
+                            color: AppColors.main,
+                          ),
                         ),
                       );
-                    },
-                  );
+                    }
+
+                    return Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        // 2위 (왼쪽)
+                        _buildMenuThumbnail(
+                          controller.topMenus[1],
+                          1,
+                          isOutside,
+                        ),
+                        // 1위 (가운데)
+                        _buildMenuThumbnail(
+                          controller.topMenus[0],
+                          0,
+                          isOutside,
+                        ),
+                        // 3위 (오른쪽)
+                        _buildMenuThumbnail(
+                          controller.topMenus[2],
+                          2,
+                          isOutside,
+                        ),
+                      ],
+                    );
+                  }
+                }),
+                const SizedBox(height: 24),
+                // 다른 추천 메뉴 - 사내일 때는 4위 이후 표시
+                Obx(() {
+                  final isInside = controller.isInside;
+
+                  if (isInside) {
+                    // 사내 추천 - 4위 이후 메뉴 표시
+                    final otherMenus =
+                        controller.topMenus.length > 3
+                            ? controller.topMenus.skip(3).toList()
+                            : <Map<String, dynamic>>[];
+
+                    if (otherMenus.isEmpty) return SizedBox.shrink();
+
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '다른 추천 메뉴',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+                        SizedBox(height: 12),
+                        ...otherMenus.where((menu) => menu != null).map((menu) {
+                          return Container(
+                            margin: EdgeInsets.only(bottom: 8),
+                            child: Card(
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Padding(
+                                padding: EdgeInsets.all(16),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Container(
+                                          width: 30,
+                                          height: 30,
+                                          decoration: BoxDecoration(
+                                            color: AppColors.main,
+                                            borderRadius: BorderRadius.circular(
+                                              15,
+                                            ),
+                                          ),
+                                          child: Center(
+                                            child: Text(
+                                              '${menu['rank'] ?? '?'}',
+                                              style: TextStyle(
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                        SizedBox(width: 12),
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                '${menu['store'] ?? ''} ${menu['corner'] ?? ''}',
+                                                style: TextStyle(
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 16,
+                                                ),
+                                              ),
+                                              SizedBox(height: 4),
+                                              Row(
+                                                children: [
+                                                  Icon(
+                                                    Icons.access_time,
+                                                    size: 16,
+                                                    color: Colors.grey,
+                                                  ),
+                                                  SizedBox(width: 4),
+                                                  Text(
+                                                    '대기시간 ${menu['waiting_pred'] ?? 0}분',
+                                                    style: TextStyle(
+                                                      color: Colors.grey,
+                                                      fontSize: 12,
+                                                    ),
+                                                  ),
+                                                  SizedBox(width: 12),
+                                                  Icon(
+                                                    Icons.star,
+                                                    size: 16,
+                                                    color: Colors.amber,
+                                                  ),
+                                                  SizedBox(width: 4),
+                                                  Text(
+                                                    '${menu['score'] ?? 0}점',
+                                                    style: TextStyle(
+                                                      color: Colors.grey,
+                                                      fontSize: 12,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    SizedBox(height: 12),
+                                    Text(
+                                      '메뉴: ${menu['menu'] ?? '정보 없음'}',
+                                      style: TextStyle(fontSize: 14),
+                                    ),
+                                    if (menu['comment'] != null &&
+                                        menu['comment']
+                                            .toString()
+                                            .isNotEmpty) ...[
+                                      SizedBox(height: 8),
+                                      Container(
+                                        padding: EdgeInsets.all(8),
+                                        decoration: BoxDecoration(
+                                          color: AppColors.main.withOpacity(
+                                            0.1,
+                                          ),
+                                          borderRadius: BorderRadius.circular(
+                                            8,
+                                          ),
+                                        ),
+                                        child: Row(
+                                          children: [
+                                            Icon(
+                                              Icons.chat_bubble_outline,
+                                              size: 16,
+                                              color: AppColors.main,
+                                            ),
+                                            SizedBox(width: 8),
+                                            Expanded(
+                                              child: Text(
+                                                menu['comment'].toString(),
+                                                style: TextStyle(
+                                                  color: AppColors.main,
+                                                  fontSize: 13,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ],
+                    );
+                  } else {
+                    // 사외 추천 - 기존 방식
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '다른 추천 메뉴',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+                        SizedBox(height: 12),
+                        ListView.separated(
+                          shrinkWrap: true,
+                          physics: NeverScrollableScrollPhysics(),
+                          itemCount: controller.otherMenus.length,
+                          separatorBuilder:
+                              (_, __) => const SizedBox(height: 8),
+                          itemBuilder: (context, idx) {
+                            final menu = controller.otherMenus[idx];
+                            return Card(
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: ListTile(
+                                leading: CircleAvatar(
+                                  backgroundImage:
+                                      (menu['image'] != null &&
+                                              (menu['image'] as String)
+                                                  .isNotEmpty)
+                                          ? getMenuImage(
+                                            menu['image'] as String?,
+                                          )
+                                          : null,
+                                  child:
+                                      (menu['image'] == null ||
+                                              (menu['image'] as String).isEmpty)
+                                          ? Icon(
+                                            Icons.restaurant,
+                                            color: Colors.grey[600],
+                                          )
+                                          : null,
+                                  radius: 22,
+                                ),
+                                title: SizedBox(
+                                  width: 120,
+                                  child: Text(
+                                    '\t${menu['rank']}. ${menu['name']}',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    softWrap: false,
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 15,
+                                    ),
+                                  ),
+                                ),
+                                subtitle: Text(
+                                  '${menu['score']}점',
+                                  style: TextStyle(fontSize: 13),
+                                ),
+                                trailing:
+                                    (menu['price'] != null &&
+                                            (menu['price'] as String)
+                                                .isNotEmpty)
+                                        ? Text(
+                                          '${menu['price'] as String}',
+                                          style: TextStyle(
+                                            color: Colors.black87,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 14,
+                                          ),
+                                        )
+                                        : null,
+                                onTap:
+                                    () => Get.toNamed(
+                                      '/map_result',
+                                      arguments: {
+                                        'selectedMenuIndex': menu['rank'] - 1,
+                                      },
+                                    ),
+                              ),
+                            );
+                          },
+                        ),
+                      ],
+                    );
+                  }
                 }),
                 const SizedBox(height: 24),
                 // 하단 버튼
@@ -351,43 +715,54 @@ class RecommendResultView extends GetView<RecommendResultController> {
       child: Padding(
         padding: EdgeInsets.symmetric(horizontal: 8),
         child: Column(
+          mainAxisAlignment: MainAxisAlignment.start, // 상단 정렬로 통일
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Stack(
-              alignment: Alignment.topRight,
-              children: [
-                CircleAvatar(
-                  radius: index == 0 ? 38 : 32, // 1위(index 0)가 가장 큼
-                  backgroundColor:
-                      index == 0 ? AppColors.main : Colors.grey[200],
-                  child: CircleAvatar(
-                    radius: index == 0 ? 34 : 28,
-                    backgroundImage:
-                        (menu['image'] != null &&
-                                (menu['image'] as String).isNotEmpty)
-                            ? getMenuImage(menu['image'] as String?)
-                            : null,
-                    child:
-                        (menu['image'] == null ||
-                                (menu['image'] as String).isEmpty)
-                            ? Icon(Icons.restaurant, color: Colors.grey[600])
-                            : null,
-                  ),
-                ),
-                if (index == 0) // 1위에만 왕관
-                  Positioned(
-                    top: 0,
-                    right: 0,
-                    child: Icon(
-                      Icons.emoji_events,
-                      color: Colors.amber,
-                      size: 24,
+            // 아바타 영역을 고정 높이로 설정 (1위가 가장 크므로 그 크기 기준)
+            Container(
+              height: 76, // 1위 아바타 크기(38*2) 기준으로 고정
+              width: 76,
+              alignment: Alignment.center,
+              child: Stack(
+                alignment: Alignment.topRight,
+                children: [
+                  CircleAvatar(
+                    radius: index == 0 ? 38 : 32, // 1위(index 0)가 가장 큼
+                    backgroundColor:
+                        index == 0 ? AppColors.main : Colors.grey[200],
+                    child: CircleAvatar(
+                      radius: index == 0 ? 34 : 28,
+                      backgroundImage:
+                          (menu['image'] != null &&
+                                  (menu['image'] as String).isNotEmpty)
+                              ? getMenuImage(menu['image'] as String?)
+                              : null,
+                      child:
+                          (menu['image'] == null ||
+                                  (menu['image'] as String).isEmpty)
+                              ? Icon(Icons.restaurant, color: Colors.grey[600])
+                              : null,
                     ),
                   ),
-              ],
+                  if (index == 0) // 1위에만 왕관
+                    Positioned(
+                      top: 0,
+                      right: 0,
+                      child: Icon(
+                        Icons.emoji_events,
+                        color: Colors.amber,
+                        size: 24,
+                      ),
+                    ),
+                ],
+              ),
             ),
             const SizedBox(height: 8),
-            SizedBox(
+            // 매장명 영역을 고정 높이로 설정
+            Container(
               width: 80,
+              height: 42, // 높이를 50에서 42로 더 줄임
+              alignment: Alignment.topCenter, // 상단 정렬
               child: Text(
                 menu['name'] as String,
                 maxLines: 3,
@@ -397,26 +772,35 @@ class RecommendResultView extends GetView<RecommendResultController> {
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
               ),
             ),
-            Text(
-              '${menu['score']}점',
-              style: TextStyle(
-                color: AppColors.main,
-                fontWeight: FontWeight.bold,
+            // 간격을 완전히 제거하거나 최소화
+            // 점수 영역을 고정 높이로 설정
+            Container(
+              height: 20, // 고정 높이
+              alignment: Alignment.center,
+              child: Text(
+                '${menu['score']}점',
+                style: TextStyle(
+                  color: AppColors.main,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
+            const SizedBox(height: 4),
             // 가격 영역을 고정 높이로 설정하여 모든 메뉴의 높이를 동일하게 유지
-            SizedBox(
+            Container(
               height: 20, // 고정 높이
+              alignment: Alignment.center,
               child:
                   (menu['price'] != null &&
                           (menu['price'] as String).isNotEmpty)
                       ? Text(
-                        '₩${menu['price'] as String}',
+                        menu['price'] as String,
                         style: TextStyle(
                           color: Colors.black87,
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
                         ),
+                        textAlign: TextAlign.center,
                       )
                       : SizedBox.shrink(), // 가격이 없어도 높이는 유지
             ),

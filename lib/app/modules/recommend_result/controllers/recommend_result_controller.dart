@@ -7,19 +7,18 @@ import 'package:flutter/foundation.dart';
 import 'dart:convert';
 import 'dart:io';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../../services/api_service.dart';
 
 class RecommendResultController extends GetxController {
-  // 1~3위 메뉴
-  // 쇼쿠,이자카야,37.56095210066757,126.82881756217137,얼큰해물짬뽕,"23,000",
-  // 홀리즉떡,한식,37.55905430305593,126.82859334598922,떡볶이 2인분,"15,000",https://search.pstatic.net/common/?autoRotate=true&quality=95&type=f320_320&src=https%3A%2F%2Fldb-phinf.pstatic.net%2F20250629_217%2F1751205189369TKPx5_JPEG%2FIMG_9942.jpeg
-  // 흥탄양갈비 마곡본점,양갈비,37.559878832899585,126.8291562863812,고급양갈비(250g),"30,000",https://search.pstatic.net/common/?autoRotate=true&quality=95&type=f320_320&src=https%3A%2F%2Fldb-phinf.pstatic.net%2F20200628_283%2F1593328413878kPwua_JPEG%2F7CNwoLKqyMthvIe40a019CS0.jpg
-  // 나룻목 마곡나루역점,"육류,고기요리",37.56731824213836,126.82700200214423,쫄깃쫄깃 갈매기살 180g,"16,900",https://search.pstatic.net/common/?autoRotate=true&quality=95&type=f320_320&src=https%3A%2F%2Fldb-phinf.pstatic.net%2F20250529_25%2F1748496606944RgdNx_JPEG%2FKakaoTalk_20250529_142907134_02.jpg
-  // 예향정 마곡점,37.5678688,126.8265941,된장찌개(공기밥포함),8000
-  // 무쇠김치찌개,37.5666100,126.9783882,꽁치김치찌개,9000
-  // 삼미당마곡점,37.5598184,126.8315996,니쿠니쿠마제소바,13000
+  // ApiService 인스턴스
+  final ApiService _apiService = Get.find<ApiService>();
 
+  // 로딩 상태
+  var isLoading = false.obs;
+
+  // 1~3위 메뉴 (기본값은 사외 데이터)
   final topMenus =
-      [
+      <Map<String, dynamic>>[
         {
           'name': '홀리즉떡',
           'score': 92,
@@ -55,22 +54,6 @@ class RecommendResultController extends GetxController {
           'longitude': 126.8265941,
           'price': '8,000',
         },
-        // {
-        //   'name': '무쇠김치찌개',
-        //   'score': 92,
-        //   'image': '',
-        //   'latitude': 37.5666100,
-        //   'longitude': 126.9783882,
-        //   'price': '9,000',
-        // },
-        // {
-        //   'name': '삼미당마곡점',
-        //   'score': 92,
-        //   'image': '',
-        //   'latitude': 37.5598184,
-        //   'longitude': 126.8315996,
-        //   'price': '13,000',
-        // },
         {
           'name': '쇼쿠 이자카야',
           'score': 89,
@@ -150,7 +133,26 @@ class RecommendResultController extends GetxController {
   }
 
   void onRetry() {
-    Get.snackbar('다시 추천', '추천을 새로 받습니다!');
+    print('다시 추천받기 버튼 클릭 - affiliation: ${affiliation.value}');
+
+    if (isInside) {
+      // 사내 추천 - 서버에서 새로운 데이터 받아오기
+      _loadIndoorRecommendations();
+      Get.snackbar(
+        '알림',
+        '새로운 사내 추천을 받아오고 있습니다...',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    } else {
+      // 사외 추천 - 서버에서 새로운 데이터 받아오기 (추후 구현)
+      // TODO: 사외 추천 API 호출 추가
+      _loadOutdoorRecommendations();
+      Get.snackbar(
+        '알림',
+        '새로운 사외 추천을 받아오고 있습니다...',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    }
   }
 
   Future<void> onSave() async {
@@ -227,12 +229,144 @@ class RecommendResultController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    // 파라미터에서 affiliation 정보 가져오기
+
+    // 파라미터에서 affiliation 값 가져오기
     affiliation.value = Get.parameters['affiliation'] ?? 'outside';
-    print('추천 결과 페이지 - affiliation: ${affiliation.value}');
+    print(
+      'RecommendResultController onInit - affiliation: ${affiliation.value}',
+    );
+
+    if (isInside) {
+      // 사내 추천 데이터 로드
+      _loadIndoorRecommendations();
+    } else {
+      // 사외 추천 데이터 로드
+      _loadOutdoorRecommendations();
+    }
+  }
+
+  // 사내 추천 데이터를 서버에서 가져오기
+  Future<void> _loadIndoorRecommendations() async {
+    try {
+      isLoading.value = true;
+
+      final response = await _apiService.get('/users/indoor');
+
+      if (response.statusCode == 200) {
+        final responseData = response.data;
+
+        if (responseData['isSuccess'] == true &&
+            responseData['result'] != null) {
+          final List<dynamic> indoorData = responseData['result'];
+
+          // 서버 데이터를 topMenus 형식으로 변환
+          final convertedMenus =
+              indoorData.map((item) {
+                return <String, dynamic>{
+                  'name':
+                      '${_convertStoreName(item['store'])} ${item['corner']}',
+                  'score': item['score'],
+                  'image': '', // 사내 식당은 이미지 없음
+                  'menu': item['menu'],
+                  'waiting_pred': item['waiting_pred'],
+                  'comment': item['comment'],
+                  'rank': item['rank'],
+                  'store': _convertStoreName(item['store']),
+                  'corner': item['corner'],
+                };
+              }).toList();
+
+          topMenus.value = convertedMenus;
+          print('사내 추천 데이터 로드 완료: ${topMenus.length}개');
+        }
+      }
+    } catch (e) {
+      print('사내 추천 데이터 로드 실패: $e');
+      Get.snackbar('오류', '사내 추천 데이터를 불러오는데 실패했습니다.');
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  // 영문 매장명을 한글로 변환
+  String _convertStoreName(String? storeName) {
+    if (storeName == null) return '';
+
+    switch (storeName.toLowerCase()) {
+      case 'ourhome':
+        return '아워홈';
+      default:
+        return storeName;
+    }
   }
 
   // 사내/사외 여부 확인
   bool get isInside => affiliation.value == 'inside';
   bool get isOutside => affiliation.value == 'outside';
+
+  // 사외 추천 데이터를 서버에서 가져오기
+  Future<void> _loadOutdoorRecommendations() async {
+    try {
+      isLoading.value = true;
+
+      // 실제 사외 추천 API 호출
+      final response = await _apiService.get('/users/outdoor');
+
+      if (response.data['isSuccess'] == true &&
+          response.data['result'] != null) {
+        final List<dynamic> resultList = response.data['result'];
+
+        // 서버 데이터를 앱 내부 형식으로 변환
+        final List<Map<String, dynamic>> convertedMenus =
+            resultList.map((item) {
+              return {
+                'name': item['store'] ?? '',
+                'menu': item['menu'] ?? '',
+                'score': item['score'] ?? 0,
+                'price': _formatPrice(item['price']),
+                'rank': item['rank'] ?? 0,
+                'comment': item['comment'] ?? '',
+                // latitude와 longitude는 나중에 추가될 예정
+                'latitude': item['latitude'] ?? 0.0,
+                'longitude': item['longitude'] ?? 0.0,
+                'image': '', // 이미지는 기본값으로 설정 (웹에서는 기본 이미지 사용)
+              };
+            }).toList();
+
+        topMenus.value = convertedMenus;
+        print('사외 추천 데이터 로드 완료: ${topMenus.length}개');
+
+        // 성공 메시지
+        Get.snackbar(
+          '완료',
+          '새로운 사외 추천을 받아왔습니다!',
+          snackPosition: SnackPosition.BOTTOM,
+        );
+      } else {
+        print('사외 추천 API 응답 오류: ${response.data['message']}');
+        Get.snackbar(
+          '오류',
+          response.data['message'] ?? '사외 추천 데이터를 불러오는데 실패했습니다.',
+        );
+      }
+    } catch (e) {
+      print('사외 추천 데이터 로드 실패: $e');
+      Get.snackbar('오류', '사외 추천 데이터를 불러오는데 실패했습니다.');
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  // 가격 포맷팅 함수
+  String _formatPrice(dynamic price) {
+    if (price == null) return '';
+
+    // 숫자인 경우 천 단위 콤마 추가
+    if (price is int) {
+      return '${price.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},')}원';
+    }
+
+    // 이미 문자열인 경우 그대로 반환
+    return price.toString();
+  }
 }

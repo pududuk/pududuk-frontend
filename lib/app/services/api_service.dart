@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:get/get.dart' hide Response;
+import 'package:flutter/foundation.dart';
 import 'package:pududuk_app/app/utils/env_config.dart';
 
 class ApiService extends GetxService {
@@ -18,6 +19,17 @@ class ApiService extends GetxService {
     _dio.options.connectTimeout = const Duration(seconds: 10);
     _dio.options.receiveTimeout = const Duration(seconds: 10);
     _dio.options.headers = {'Content-Type': 'application/json'};
+
+    // 웹에서 CORS 문제 해결을 위한 추가 헤더 설정
+    if (kIsWeb) {
+      _dio.options.headers.addAll({
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods':
+            'GET, POST, PUT, DELETE, PATCH, OPTIONS',
+        'Access-Control-Allow-Headers':
+            'Origin, X-Requested-With, Content-Type, Accept, Authorization',
+      });
+    }
 
     // TODO: 실제 서버 URL로 변경
     _dio.options.baseUrl = 'https://your-server.com/api';
