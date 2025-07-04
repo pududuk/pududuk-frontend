@@ -220,4 +220,19 @@ class RecommendResultController extends GetxController {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString('affiliation');
   }
+
+  // affiliation 정보 (사내/사외)
+  var affiliation = 'outside'.obs;
+
+  @override
+  void onInit() {
+    super.onInit();
+    // 파라미터에서 affiliation 정보 가져오기
+    affiliation.value = Get.parameters['affiliation'] ?? 'outside';
+    print('추천 결과 페이지 - affiliation: ${affiliation.value}');
+  }
+
+  // 사내/사외 여부 확인
+  bool get isInside => affiliation.value == 'inside';
+  bool get isOutside => affiliation.value == 'outside';
 }

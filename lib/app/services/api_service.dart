@@ -103,6 +103,26 @@ class ApiService extends GetxService {
     }
   }
 
+  // PATCH 요청
+  Future<Response<T>> patch<T>(
+    String path, {
+    dynamic data,
+    Map<String, dynamic>? queryParameters,
+    Options? options,
+  }) async {
+    try {
+      return await _dio.patch<T>(
+        EnvConfig.apiBaseUrl + path,
+        data: data,
+        queryParameters: queryParameters,
+        options: options,
+      );
+    } on DioException catch (e) {
+      _handleError(e);
+      rethrow;
+    }
+  }
+
   // DELETE 요청
   Future<Response<T>> delete<T>(
     String path, {

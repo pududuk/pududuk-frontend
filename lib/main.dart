@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'app/routes/app_pages.dart';
 import 'app/utils/env_config.dart';
 import 'package:pududuk_app/app/services/api_service.dart';
@@ -14,7 +15,10 @@ void main() async {
   await EnvConfig.load();
 
   // API 서비스 초기화
-  Get.put(ApiService());
+  final apiService = Get.put(ApiService());
+
+  // 저장된 토큰 자동 로드
+  await _loadSavedToken(apiService);
 
   // 네이버 지도 초기화 (웹이 아닌 경우에만)
   if (!kIsWeb) {
@@ -30,6 +34,20 @@ void main() async {
   }
 
   runApp(const MyApp());
+}
+
+Future<void> _loadSavedToken(ApiService apiService) async {
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    final savedToken = prefs.getString('access_token');
+
+    if (savedToken != null && savedToken.isNotEmpty) {
+      apiService.setAuthToken(savedToken);
+      print('저장된 토큰 로드 완료');
+    }
+  } catch (e) {
+    print('토큰 로드 중 오류: $e');
+  }
 }
 
 Future<void> _requestPermissions() async {

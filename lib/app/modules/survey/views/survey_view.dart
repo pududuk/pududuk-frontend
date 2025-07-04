@@ -4,25 +4,13 @@ import 'package:pududuk_app/app/routes/app_pages.dart';
 import '../controllers/survey_controller.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import '../../../utils/app_colors.dart';
 import '../../../utils/platform_utils.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class SurveyView extends GetView<SurveyController> {
   const SurveyView({Key? key}) : super(key: key);
-
-  Future<void> _saveSurveyToPrefs(SurveyController controller) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('survey_age', controller.age.value);
-    await prefs.setString('survey_gender', controller.gender.value);
-    await prefs.setString('survey_waitTime', controller.waitTime.value);
-    await prefs.setString('survey_nearby', controller.nearby.value);
-    await prefs.setString(
-      'survey_preferredFoods',
-      controller.preferredFoods.value,
-    );
-    await prefs.setString('survey_restrictions', controller.restrictions.value);
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -297,6 +285,29 @@ class SurveyView extends GetView<SurveyController> {
               ),
             ),
             const SizedBox(height: 20),
+            const Text('최대 가격', style: TextStyle(fontWeight: FontWeight.w500)),
+            const SizedBox(height: 8),
+            TextField(
+              controller: controller.maxPriceController,
+              keyboardType: TextInputType.number,
+              inputFormatters: [
+                FilteringTextInputFormatter.digitsOnly,
+                LengthLimitingTextInputFormatter(8),
+              ],
+              decoration: InputDecoration(
+                hintText: "최대 가격을 입력해주세요...",
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+                prefixText: '₩ ',
+              ),
+              onChanged: (v) => controller.maxPrice.value = v,
+            ),
+            const SizedBox(height: 20),
             const Text('선호 음식', style: TextStyle(fontWeight: FontWeight.w500)),
             const SizedBox(height: 8),
             TextField(
@@ -354,28 +365,94 @@ class SurveyView extends GetView<SurveyController> {
                 width: double.infinity,
                 height: 48,
                 child: ElevatedButton(
-                  onPressed: () async {
-                    await _saveSurveyToPrefs(controller);
-                    // TODO: 저장 후 이동/알림 등 추가 가능
-                    Get.snackbar(
-                      controller.hasExistingData.value ? '수정 완료' : '저장 완료',
-                      controller.hasExistingData.value
-                          ? '설문 정보가 수정되었습니다.'
-                          : '설문 정보가 저장되었습니다.',
-                      snackPosition: SnackPosition.BOTTOM,
-                    );
-                    Get.toNamed(Routes.RECOMMEND_RESULT);
-                  },
+                  onPressed:
+                      controller.isLoading.value
+                          ? null
+                          : () async {
+                            print(
+                              '버튼 클릭됨 - hasExistingData: ${controller.hasExistingData.value}',
+                            );
+
+                            // 서버 전송
+                            final success = await controller.submitSurvey();
+
+                            print('서버 전송 결과: $success');
+
+                            if (success) {
+                              print('성공 - 다음 페이지로 이동');
+
+                              // 수정하기면 이전 페이지로, 저장하기면 추천 결과로
+                              if (controller.hasExistingData.value) {
+                                print('수정 완료 - 이전 페이지로 이동');
+                                print(
+                                  'Navigator.canPop(): ${Navigator.canPop(context)}',
+                                );
+
+                                if (Navigator.canPop(context)) {
+                                  Get.back();
+                                  print('Get.back() 호출 완료');
+
+                                  // 뒤로 간 후에 Snackbar 표시
+                                  Future.delayed(
+                                    Duration(milliseconds: 100),
+                                    () {
+                                      Get.snackbar(
+                                        '수정 완료',
+                                        '설문 정보가 수정되었습니다.',
+                                        snackPosition: SnackPosition.BOTTOM,
+                                      );
+                                    },
+                                  );
+                                } else {
+                                  print('뒤로 갈 수 없음 - 홈으로 이동');
+                                  Get.offAllNamed(Routes.HOME);
+                                }
+                              } else {
+                                print('저장 완료 - 추천 결과 페이지로 이동');
+                                Get.snackbar(
+                                  '저장 완료',
+                                  '설문 정보가 저장되었습니다.',
+                                  snackPosition: SnackPosition.BOTTOM,
+                                );
+                                Get.toNamed(
+                                  Routes.RECOMMEND_RESULT,
+                                  parameters: {
+                                    'affiliation': controller.affiliation,
+                                  },
+                                );
+                              }
+                            } else {
+                              print('서버 전송 실패');
+                            }
+                          },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.main,
+                    backgroundColor:
+                        controller.isLoading.value
+                            ? Colors.grey.shade300
+                            : AppColors.main,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
                     ),
                   ),
-                  child: Text(
-                    controller.hasExistingData.value ? '수정하기' : '저장하기',
-                    style: const TextStyle(color: Colors.white, fontSize: 16),
-                  ),
+                  child:
+                      controller.isLoading.value
+                          ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Colors.white,
+                              ),
+                            ),
+                          )
+                          : Text(
+                            controller.hasExistingData.value ? '수정하기' : '저장하기',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                            ),
+                          ),
                 ),
               ),
             ),

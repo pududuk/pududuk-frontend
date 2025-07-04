@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../../../utils/app_colors.dart';
 import '../../../utils/platform_utils.dart';
 import '../controllers/affiliation_controller.dart';
@@ -9,31 +8,6 @@ import 'package:flutter/foundation.dart';
 
 class AffiliationView extends GetView<AffiliationController> {
   const AffiliationView({Key? key}) : super(key: key);
-
-  Future<void> _handleContinue() async {
-    final prefs = await SharedPreferences.getInstance();
-    final age = prefs.getString('survey_age') ?? '';
-    final gender = prefs.getString('survey_gender') ?? '';
-    final waitTime = prefs.getString('survey_waitTime') ?? '';
-    final nearby = prefs.getString('survey_nearby') ?? '';
-    final preferredFoods = prefs.getString('survey_preferredFoods') ?? '';
-    final restrictions = prefs.getString('survey_restrictions') ?? '';
-
-    if ([
-      age,
-      gender,
-      waitTime,
-      nearby,
-      preferredFoods,
-      restrictions,
-    ].every((v) => v.isEmpty)) {
-      // 모두 비어있으면 SurveyView로 이동
-      Get.toNamed(Routes.SURVEY);
-    } else {
-      // 하나라도 있으면 RecommendResultView로 이동
-      Get.toNamed(Routes.RECOMMEND_RESULT);
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -178,27 +152,38 @@ class AffiliationView extends GetView<AffiliationController> {
                 height: 48,
                 child: ElevatedButton(
                   onPressed:
-                      controller.selected.value.isNotEmpty
-                          ? () async {
-                            final prefs = await SharedPreferences.getInstance();
-                            await prefs.setString(
-                              'affiliation',
-                              controller.selected.value,
-                            );
-                            await _handleContinue();
-                          }
+                      controller.selected.value.isNotEmpty &&
+                              !controller.isLoading.value
+                          ? () => controller.selectAffiliationAndProceed(
+                            controller.selected.value,
+                          )
                           : null,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.main,
+                    backgroundColor:
+                        controller.isLoading.value
+                            ? Colors.grey.shade300
+                            : AppColors.main,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
                     ),
                     elevation: 0,
                   ),
-                  child: const Text(
-                    '추천받기',
-                    style: TextStyle(color: Colors.white, fontSize: 16),
-                  ),
+                  child:
+                      controller.isLoading.value
+                          ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Colors.white,
+                              ),
+                            ),
+                          )
+                          : const Text(
+                            '추천받기',
+                            style: TextStyle(color: Colors.white, fontSize: 16),
+                          ),
                 ),
               ),
             ),
@@ -217,11 +202,7 @@ class AffiliationView extends GetView<AffiliationController> {
   }) {
     final isSelected = controller.selected.value == value;
     return GestureDetector(
-      onTap: () async {
-        controller.selected.value = value;
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('affiliation', value);
-      },
+      onTap: () => controller.selected.value = value,
       child: Container(
         width: double.infinity,
         padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 16),
@@ -266,11 +247,7 @@ class AffiliationView extends GetView<AffiliationController> {
               value: value,
               groupValue: controller.selected.value,
               activeColor: AppColors.main,
-              onChanged: (v) async {
-                controller.selected.value = v ?? '';
-                final prefs = await SharedPreferences.getInstance();
-                await prefs.setString('affiliation', v ?? '');
-              },
+              onChanged: (v) => controller.selected.value = v ?? '',
             ),
           ],
         ),

@@ -149,81 +149,61 @@ class RecommendResultView extends GetView<RecommendResultController> {
                     Positioned(
                       top: 0,
                       right: 0,
-                      child: FutureBuilder<String?>(
-                        future: controller.getAffiliation(),
-                        builder: (context, snapshot) {
-                          if (snapshot.data == 'outside') {
-                            return Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                InkWell(
-                                  onTap: () {
-                                    Get.toNamed(
-                                      '/map_result',
-                                      arguments: {'selectedMenuIndex': 0},
-                                    ); // 기본값: 1위 메뉴
-                                  },
-                                  borderRadius: BorderRadius.circular(20),
-                                  child: CircleAvatar(
-                                    radius: 16,
-                                    backgroundColor: AppColors.main.withAlpha(
-                                      30,
-                                    ),
-                                    child: const Icon(
-                                      Icons.map,
-                                      color: AppColors.main,
-                                      size: 20,
-                                    ),
+                      child: Obx(() {
+                        if (controller.isOutside) {
+                          return Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              InkWell(
+                                onTap: () {
+                                  Get.toNamed(
+                                    '/map_result',
+                                    arguments: {'selectedMenuIndex': 0},
+                                  ); // 기본값: 1위 메뉴
+                                },
+                                borderRadius: BorderRadius.circular(20),
+                                child: CircleAvatar(
+                                  radius: 16,
+                                  backgroundColor: AppColors.main.withAlpha(30),
+                                  child: const Icon(
+                                    Icons.map,
+                                    color: AppColors.main,
+                                    size: 20,
                                   ),
                                 ),
-                                const SizedBox(height: 4),
-                                const Text(
-                                  '지도로 보기',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.grey,
-                                  ),
+                              ),
+                              const SizedBox(height: 4),
+                              const Text(
+                                '지도로 보기',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey,
                                 ),
-                              ],
-                            );
-                          }
-                          return SizedBox.shrink();
-                        },
-                      ),
+                              ),
+                            ],
+                          );
+                        }
+                        return SizedBox.shrink();
+                      }),
                     ),
                   ],
                 ),
                 const SizedBox(height: 24),
                 // 1~3위 메뉴 썸네일
-                FutureBuilder<String?>(
-                  future: controller.getAffiliation(),
-                  builder: (context, snapshot) {
-                    final isOutside = snapshot.data == 'outside';
-                    return Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        // 2위 (왼쪽)
-                        _buildMenuThumbnail(
-                          controller.topMenus[1],
-                          1,
-                          isOutside,
-                        ),
-                        // 1위 (가운데)
-                        _buildMenuThumbnail(
-                          controller.topMenus[0],
-                          0,
-                          isOutside,
-                        ),
-                        // 3위 (오른쪽)
-                        _buildMenuThumbnail(
-                          controller.topMenus[2],
-                          2,
-                          isOutside,
-                        ),
-                      ],
-                    );
-                  },
-                ),
+                Obx(() {
+                  final isOutside = controller.isOutside;
+                  return Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      // 2위 (왼쪽)
+                      _buildMenuThumbnail(controller.topMenus[1], 1, isOutside),
+                      // 1위 (가운데)
+                      _buildMenuThumbnail(controller.topMenus[0], 0, isOutside),
+                      // 3위 (오른쪽)
+                      _buildMenuThumbnail(controller.topMenus[2], 2, isOutside),
+                    ],
+                  );
+                }),
                 const SizedBox(height: 24),
                 // 다른 추천 메뉴
                 Align(
@@ -234,82 +214,79 @@ class RecommendResultView extends GetView<RecommendResultController> {
                   ),
                 ),
                 const SizedBox(height: 12),
-                FutureBuilder<String?>(
-                  future: controller.getAffiliation(),
-                  builder: (context, snapshot) {
-                    final isOutside = snapshot.data == 'outside';
-                    return ListView.separated(
-                      shrinkWrap: true,
-                      physics: NeverScrollableScrollPhysics(),
-                      itemCount: controller.otherMenus.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 8),
-                      itemBuilder: (context, idx) {
-                        final menu = controller.otherMenus[idx];
-                        return Card(
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                Obx(() {
+                  final isOutside = controller.isOutside;
+                  return ListView.separated(
+                    shrinkWrap: true,
+                    physics: NeverScrollableScrollPhysics(),
+                    itemCount: controller.otherMenus.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 8),
+                    itemBuilder: (context, idx) {
+                      final menu = controller.otherMenus[idx];
+                      return Card(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: ListTile(
+                          leading: CircleAvatar(
+                            backgroundImage:
+                                (menu['image'] != null &&
+                                        (menu['image'] as String).isNotEmpty)
+                                    ? getMenuImage(menu['image'] as String?)
+                                    : null,
+                            child:
+                                (menu['image'] == null ||
+                                        (menu['image'] as String).isEmpty)
+                                    ? Icon(
+                                      Icons.restaurant,
+                                      color: Colors.grey[600],
+                                    )
+                                    : null,
+                            radius: 22,
                           ),
-                          child: ListTile(
-                            leading: CircleAvatar(
-                              backgroundImage:
-                                  (menu['image'] != null &&
-                                          (menu['image'] as String).isNotEmpty)
-                                      ? getMenuImage(menu['image'] as String?)
-                                      : null,
-                              child:
-                                  (menu['image'] == null ||
-                                          (menu['image'] as String).isEmpty)
-                                      ? Icon(
-                                        Icons.restaurant,
-                                        color: Colors.grey[600],
-                                      )
-                                      : null,
-                              radius: 22,
-                            ),
-                            title: SizedBox(
-                              width: 120,
-                              child: Text(
-                                '\t${menu['rank']}. ${menu['name']}',
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                softWrap: false,
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 15,
-                                ),
+                          title: SizedBox(
+                            width: 120,
+                            child: Text(
+                              '\t${menu['rank']}. ${menu['name']}',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              softWrap: false,
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 15,
                               ),
                             ),
-                            subtitle: Text(
-                              '${menu['score']}점',
-                              style: TextStyle(fontSize: 13),
-                            ),
-                            trailing:
-                                (menu['price'] != null &&
-                                        (menu['price'] as String).isNotEmpty)
-                                    ? Text(
-                                      '₩${menu['price'] as String}',
-                                      style: TextStyle(
-                                        color: Colors.black87,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 14,
-                                      ),
-                                    )
-                                    : null,
-                            onTap:
-                                isOutside
-                                    ? () => Get.toNamed(
-                                      '/map_result',
-                                      arguments: {
-                                        'selectedMenuIndex': menu['rank'] - 1,
-                                      },
-                                    )
-                                    : null,
                           ),
-                        );
-                      },
-                    );
-                  },
-                ),
+                          subtitle: Text(
+                            '${menu['score']}점',
+                            style: TextStyle(fontSize: 13),
+                          ),
+                          trailing:
+                              (menu['price'] != null &&
+                                      (menu['price'] as String).isNotEmpty)
+                                  ? Text(
+                                    '₩${menu['price'] as String}',
+                                    style: TextStyle(
+                                      color: Colors.black87,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 14,
+                                    ),
+                                  )
+                                  : null,
+                          onTap:
+                              isOutside
+                                  ? () => Get.toNamed(
+                                    '/map_result',
+                                    arguments: {
+                                      'selectedMenuIndex': menu['rank'] - 1,
+                                    },
+                                  )
+                                  : null,
+                        ),
+                      );
+                    },
+                  );
+                }),
                 const SizedBox(height: 24),
                 // 하단 버튼
                 Row(

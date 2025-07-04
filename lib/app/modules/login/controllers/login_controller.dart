@@ -43,13 +43,21 @@ class LoginController extends GetxController {
   Future<void> _checkAutoLogin() async {
     final prefs = await SharedPreferences.getInstance();
     final savedEmail = prefs.getString('saved_email');
+    final savedToken = prefs.getString('access_token');
 
-    if (savedEmail != null && savedEmail.isNotEmpty) {
-      // 저장된 이메일이 있으면 자동으로 홈으로 이동
-      print('저장된 이메일 발견: $savedEmail - 자동 로그인 진행');
+    if (savedEmail != null &&
+        savedEmail.isNotEmpty &&
+        savedToken != null &&
+        savedToken.isNotEmpty) {
+      // 저장된 이메일과 토큰이 모두 있으면 자동으로 홈으로 이동
+      print('저장된 이메일과 토큰 발견: $savedEmail - 자동 로그인 진행');
+
+      // ApiService에 토큰 설정
+      _apiService.setAuthToken(savedToken);
+
       Get.offAllNamed('/home');
     } else {
-      // 저장된 이메일이 없으면 입력 필드만 로드
+      // 저장된 이메일이 없거나 토큰이 없으면 입력 필드만 로드
       _loadSavedEmail();
     }
   }
@@ -86,21 +94,46 @@ class LoginController extends GetxController {
 
       if (response.statusCode == 200) {
         // 로그인 성공
-        final prefs = await SharedPreferences.getInstance();
+        final responseData = response.data;
 
-        // 로그인 상태 유지가 체크되어 있다면 이메일 저장
-        if (isRememberIdChecked.value) {
-          await prefs.setString('saved_email', idController.text.trim());
+        // IsSuccess 필드로 성공 여부 확인
+        if (responseData['isSuccess'] == true) {
+          // accessToken 저장
+          if (responseData['result'] != null) {
+            final accessToken = responseData['result'].toString();
+
+            // ApiService에 토큰 설정
+            _apiService.setAuthToken(accessToken);
+
+            // 로그인 상태 유지가 체크되어 있다면 토큰도 함께 저장
+            if (isRememberIdChecked.value) {
+              final prefs = await SharedPreferences.getInstance();
+              await prefs.setString('saved_email', idController.text.trim());
+              await prefs.setString('access_token', accessToken);
+            }
+          }
+
+          // 로그인 상태 유지가 체크되어 있다면 이메일 저장
+          if (isRememberIdChecked.value) {
+            final prefs = await SharedPreferences.getInstance();
+            await prefs.setString('saved_email', idController.text.trim());
+          } else {
+            // 체크 해제되어 있으면 저장된 이메일과 토큰 삭제
+            final prefs = await SharedPreferences.getInstance();
+            await prefs.remove('saved_email');
+            await prefs.remove('access_token');
+          }
+
+          Get.snackbar('로그인 성공', '환영합니다!');
+          Get.offAllNamed('/home');
         } else {
-          // 체크 해제되어 있으면 저장된 이메일 삭제
-          await prefs.remove('saved_email');
+          // isSuccess가 false인 경우
+          final errorMessage = responseData['message'] ?? '로그인에 실패했습니다.';
+          Get.snackbar('로그인 실패', errorMessage);
         }
-
-        Get.snackbar('로그인 성공', '환영합니다!');
-        Get.offAllNamed('/home');
       } else {
-        // 로그인 실패
-        Get.snackbar('로그인 실패', '아이디 또는 비밀번호가 올바르지 않습니다.');
+        // HTTP 상태 코드가 200이 아닌 경우
+        Get.snackbar('로그인 실패', '서버 오류가 발생했습니다.');
       }
     } catch (e) {
       // ApiService에서 이미 에러 처리됨
