@@ -948,13 +948,13 @@ class RecommendResultView extends GetView<RecommendResultController> {
               ),
             ),
             const SizedBox(height: 8),
-            // 매장명 영역을 고정 높이로 설정
+            // 메뉴명 영역을 고정 높이로 설정
             Container(
               width: 80,
-              height: 42, // 높이를 50에서 42로 더 줄임
-              alignment: Alignment.topCenter, // 상단 정렬
+              height: 42,
+              alignment: Alignment.topCenter,
               child: Text(
-                menu['name'] as String,
+                menu['menu'] as String? ?? menu['name'] as String,
                 maxLines: 3,
                 overflow: TextOverflow.ellipsis,
                 softWrap: true,

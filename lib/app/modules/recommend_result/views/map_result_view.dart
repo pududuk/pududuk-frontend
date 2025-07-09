@@ -649,15 +649,22 @@ class _MapResultViewState extends State<MapResultView> {
     }
 
     final filtered = <Map>[];
+    final searchQuery = controller.searchQuery.value.toLowerCase();
+
     for (
       int i = 0;
       i < controller.topMenus.length && filtered.length < 3;
       i++
     ) {
       final menu = controller.topMenus[i];
-      if ((menu['name'] as String? ?? '').toLowerCase().contains(
-        controller.searchQuery.value.toLowerCase(),
-      )) {
+
+      // 가게명, 메뉴명 모두에서 검색
+      final storeName =
+          (menu['store'] as String? ?? menu['name'] as String? ?? '')
+              .toLowerCase();
+      final menuName = (menu['menu'] as String? ?? '').toLowerCase();
+
+      if (storeName.contains(searchQuery) || menuName.contains(searchQuery)) {
         final item = Map<String, dynamic>.from(menu);
         item['originalRank'] = i + 1;
         filtered.add(item);
@@ -676,11 +683,18 @@ class _MapResultViewState extends State<MapResultView> {
     }
 
     final filtered = <Map>[];
+    final searchQuery = controller.searchQuery.value.toLowerCase();
+
     for (int i = 0; i < controller.otherMenus.length; i++) {
       final menu = controller.otherMenus[i];
-      if ((menu['name'] as String? ?? '').toLowerCase().contains(
-        controller.searchQuery.value.toLowerCase(),
-      )) {
+
+      // 가게명, 메뉴명 모두에서 검색
+      final storeName =
+          (menu['store'] as String? ?? menu['name'] as String? ?? '')
+              .toLowerCase();
+      final menuName = (menu['menu'] as String? ?? '').toLowerCase();
+
+      if (storeName.contains(searchQuery) || menuName.contains(searchQuery)) {
         final item = Map<String, dynamic>.from(menu);
         item['originalRank'] = i + 4; // 4위부터 시작
         filtered.add(item);
@@ -1533,7 +1547,7 @@ class _MapResultViewState extends State<MapResultView> {
                     children: [
                       Expanded(
                         child: Text(
-                          '${item['store'] ?? item['name'] ?? ''}',
+                          '${item['menu'] ?? item['name'] ?? ''}',
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 16,
@@ -1564,7 +1578,7 @@ class _MapResultViewState extends State<MapResultView> {
                         ),
                     ],
                   ),
-                  if (item['menu'] != null) Text('${item['menu']}'),
+                  if (item['store'] != null) Text('${item['store']}'),
                   if (item['price'] != null || item['sale'] != null)
                     Text(
                       '${item['price'] != null ? '${item['price']}' : ''}  ${item['sale'] ?? ''}',
@@ -1608,14 +1622,28 @@ class _MapResultViewState extends State<MapResultView> {
                   ? Icon(Icons.restaurant, color: Colors.grey[600])
                   : null,
         ),
-        title: Text(
-          '${item['store'] ?? item['name'] ?? ''}',
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '${item['menu'] ?? item['name'] ?? ''}',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+            ),
+            SizedBox(height: 2),
+            Text(
+              '${item['store'] ?? item['name'] ?? ''}',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+            ),
+          ],
         ),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            SizedBox(height: 4),
             if (item['price'] != null && (item['price'] as String).isNotEmpty)
               Text(
                 '${item['price']}',
