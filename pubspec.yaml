@@ -41,7 +41,7 @@ dependencies:
   share_plus: ^11.0.0
   path_provider: ^2.1.5
   permission_handler: ^12.0.0+1
-  flutter_naver_map:
+  flutter_naver_map: ^1.2.3
   dio: ^5.4.0
 
 dev_dependencies:

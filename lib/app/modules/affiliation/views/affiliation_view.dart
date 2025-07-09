@@ -24,6 +24,7 @@ class AffiliationView extends GetView<AffiliationController> {
     );
 
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar:
           kIsWeb
               ? PreferredSize(
