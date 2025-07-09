@@ -108,117 +108,163 @@ class RecommendResultView extends GetView<RecommendResultController> {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 SizedBox(height: kIsWeb ? 4 : 12),
-                // Stack(추천 완료 메시지+지도 버튼) 가장 위에 배치
-                Stack(
-                  children: [
-                    // 중앙에 추천 완료 메시지
-                    Align(
-                      alignment: Alignment.center,
-                      child: Column(
-                        children: [
-                          // 트로피 아이콘
-                          Container(
-                            decoration: BoxDecoration(
-                              color: AppColors.main.withAlpha(30),
-                              shape: BoxShape.circle,
+                // Stack(추천 완료 메시지+지도 버튼) 가장 위에 배치 - 오늘의 메뉴가 없는 경우 숨김
+                Obx(() {
+                  if (controller.isNoMenuToday.value) {
+                    return SizedBox.shrink(); // 오늘의 메뉴가 없으면 숨김
+                  }
+
+                  return Stack(
+                    children: [
+                      // 중앙에 추천 완료 메시지
+                      Align(
+                        alignment: Alignment.center,
+                        child: Column(
+                          children: [
+                            // 트로피 아이콘
+                            Container(
+                              decoration: BoxDecoration(
+                                color: AppColors.main.withAlpha(30),
+                                shape: BoxShape.circle,
+                              ),
+                              padding: const EdgeInsets.all(18),
+                              child: const Icon(
+                                Icons.emoji_events,
+                                color: AppColors.main,
+                                size: 40,
+                              ),
                             ),
-                            padding: const EdgeInsets.all(18),
-                            child: const Icon(
-                              Icons.emoji_events,
-                              color: AppColors.main,
-                              size: 40,
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          // 추천 상태에 따른 동적 텍스트
-                          Obx(() {
-                            if (controller.isLoading.value) {
-                              return Column(
-                                children: [
-                                  Text(
-                                    '찾고 있는 중...',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 22,
+                            const SizedBox(height: 16),
+                            // 추천 상태에 따른 동적 텍스트
+                            Obx(() {
+                              if (controller.isLoading.value) {
+                                return Column(
+                                  children: [
+                                    Text(
+                                      '찾고 있는 중...',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 22,
+                                      ),
                                     ),
-                                  ),
-                                  SizedBox(height: 6),
-                                  Text(
-                                    '당신을 위한 맞춤 메뉴를 찾고 있어요',
-                                    style: TextStyle(color: Colors.black54),
-                                  ),
-                                ],
-                              );
-                            } else {
-                              return Column(
-                                children: [
-                                  Text(
-                                    '추천 완료!',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 22,
+                                    SizedBox(height: 6),
+                                    Text(
+                                      '당신을 위한 맞춤 메뉴를 찾고 있어요',
+                                      style: TextStyle(color: Colors.black54),
                                     ),
-                                  ),
-                                  SizedBox(height: 6),
-                                  Text(
-                                    '당신을 위한 맞춤 메뉴를 찾았어요',
-                                    style: TextStyle(color: Colors.black54),
-                                  ),
-                                ],
-                              );
-                            }
-                          }),
-                        ],
+                                  ],
+                                );
+                              } else {
+                                return Column(
+                                  children: [
+                                    Text(
+                                      '추천 완료!',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 22,
+                                      ),
+                                    ),
+                                    SizedBox(height: 6),
+                                    Text(
+                                      '당신을 위한 맞춤 메뉴를 찾았어요',
+                                      style: TextStyle(color: Colors.black54),
+                                    ),
+                                  ],
+                                );
+                              }
+                            }),
+                          ],
+                        ),
                       ),
-                    ),
-                    // 오른쪽에 지도 버튼 - affiliation이 outside일 때만 노출
-                    Positioned(
-                      top: 0,
-                      right: 0,
-                      child: Obx(() {
-                        if (controller.isOutside) {
-                          return Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              InkWell(
-                                onTap: () {
-                                  Get.toNamed(
-                                    '/map_result',
-                                    arguments: {'selectedMenuIndex': 0},
-                                  ); // 기본값: 1위 메뉴
-                                },
-                                borderRadius: BorderRadius.circular(20),
-                                child: CircleAvatar(
-                                  radius: 16,
-                                  backgroundColor: AppColors.main.withAlpha(30),
-                                  child: const Icon(
-                                    Icons.map,
-                                    color: AppColors.main,
-                                    size: 20,
+                      // 오른쪽에 지도 버튼 - affiliation이 outside일 때만 노출
+                      Positioned(
+                        top: 0,
+                        right: 0,
+                        child: Obx(() {
+                          if (controller.isOutside) {
+                            return Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                InkWell(
+                                  onTap: () {
+                                    Get.toNamed(
+                                      '/map_result',
+                                      arguments: {'selectedMenuIndex': 0},
+                                    ); // 기본값: 1위 메뉴
+                                  },
+                                  borderRadius: BorderRadius.circular(20),
+                                  child: CircleAvatar(
+                                    radius: 16,
+                                    backgroundColor: AppColors.main.withAlpha(
+                                      30,
+                                    ),
+                                    child: const Icon(
+                                      Icons.map,
+                                      color: AppColors.main,
+                                      size: 20,
+                                    ),
                                   ),
                                 ),
-                              ),
-                              const SizedBox(height: 4),
-                              const Text(
-                                '지도로 보기',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.grey,
+                                const SizedBox(height: 4),
+                                const Text(
+                                  '지도로 보기',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey,
+                                  ),
                                 ),
-                              ),
-                            ],
-                          );
-                        }
-                        return SizedBox.shrink();
-                      }),
-                    ),
-                  ],
-                ),
+                              ],
+                            );
+                          }
+                          return SizedBox.shrink();
+                        }),
+                      ),
+                    ],
+                  );
+                }),
                 const SizedBox(height: 24),
                 // 1~3위 메뉴 썸네일
                 Obx(() {
                   final isOutside = controller.isOutside;
                   final isInside = controller.isInside;
+
+                  // 오늘의 메뉴가 없는 경우 (사내 추천)
+                  if (controller.isNoMenuToday.value) {
+                    return Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(40),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.restaurant_menu,
+                              size: 80,
+                              color: Colors.grey[400],
+                            ),
+                            SizedBox(height: 24),
+                            Text(
+                              '오늘의 사내 메뉴가\n아직 등록되지 않았습니다',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.grey[700],
+                                height: 1.4,
+                              ),
+                            ),
+                            SizedBox(height: 16),
+                            Text(
+                              '잠시 후 다시 시도해주세요',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }
 
                   if (controller.isLoading.value ||
                       controller.topMenus.isEmpty) {

@@ -7,7 +7,7 @@ import 'package:get/get.dart';
 import '../controllers/recommend_result_controller.dart';
 import 'dart:ui' as ui;
 import 'dart:typed_data';
-import 'naver_map_web.dart';
+import 'naver_map_conditional.dart';
 
 class MapResultView extends StatefulWidget {
   const MapResultView({Key? key}) : super(key: key);

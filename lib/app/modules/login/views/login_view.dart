@@ -160,6 +160,12 @@ class LoginView extends GetView<LoginController> {
                         () => TextField(
                           controller: controller.passwordController,
                           obscureText: !controller.isPasswordVisible.value,
+                          obscuringCharacter: '●', // 마스킹 문자 설정
+                          keyboardType:
+                              TextInputType.visiblePassword, // 비밀번호 키보드 타입
+                          enableSuggestions: false, // 자동완성 비활성화
+                          autocorrect: false, // 자동수정 비활성화
+                          enableInteractiveSelection: false, // 텍스트 선택 비활성화
                           textInputAction: TextInputAction.done,
                           onSubmitted: (value) {
                             if (controller.isLoginButtonEnabled.value &&

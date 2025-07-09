@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
-import 'dart:html' as html;
-import 'dart:ui_web' as ui_web;
-import 'dart:js' as js;
+import 'dart:async';
 import '../../../utils/env_config.dart';
+
+// 웹 전용 조건부 import
+import 'dart:html' as html show DivElement, ScriptElement, document;
+import 'dart:ui_web' as ui show platformViewRegistry;
+import 'dart:js' as js show context;
 
 class NaverMapWeb extends StatefulWidget {
   final double latitude;
@@ -26,119 +29,112 @@ class NaverMapWeb extends StatefulWidget {
 class _NaverMapWebState extends State<NaverMapWeb> {
   final String _mapElementId =
       'naver-map-${DateTime.now().millisecondsSinceEpoch}';
-  bool _isApiLoaded = false;
   bool _isLoading = true;
   String? _errorMessage;
 
   @override
   void initState() {
     super.initState();
-    _loadNaverMapAPI();
-  }
-
-  Future<void> _loadNaverMapAPI() async {
     if (kIsWeb) {
-      try {
-        // 네이버 지도 API가 이미 로드되었는지 확인
-        final isAlreadyLoaded =
-            js.context.hasProperty('naver') &&
-            js.context['naver'] != null &&
-            js.context['naver'].hasProperty('maps');
-
-        if (isAlreadyLoaded) {
-          print('네이버 지도 API가 이미 로드되어 있습니다.');
-          setState(() {
-            _isApiLoaded = true;
-            _isLoading = false;
-          });
-          _createMapElement();
-          return;
-        }
-
-        // 환경 변수에서 클라이언트 ID 가져오기
-        final clientId = EnvConfig.naverMapsClientId;
-        if (clientId.isEmpty) {
-          print('네이버 지도 클라이언트 ID가 설정되지 않았습니다.');
-          setState(() {
-            _isLoading = false;
-            _errorMessage = '네이버 지도 클라이언트 ID가 설정되지 않았습니다.';
-          });
-          return;
-        }
-
-        print('네이버 지도 API 로딩 시작 - Client ID: $clientId');
-
-        // 스크립트 요소 생성
-        final script =
-            html.ScriptElement()
-              ..type = 'text/javascript'
-              ..src =
-                  'https://oapi.map.naver.com/openapi/v3/maps.js?ncpClientId=$clientId';
-
-        // 스크립트 로드 완료 이벤트 리스너
-        script.onLoad.listen((event) {
-          print('네이버 지도 API 로드 완료');
-          setState(() {
-            _isApiLoaded = true;
-            _isLoading = false;
-          });
-          _createMapElement();
-        });
-
-        // 스크립트 로드 실패 이벤트 리스너
-        script.onError.listen((event) {
-          print('네이버 지도 API 로드 실패');
-          setState(() {
-            _isLoading = false;
-            _errorMessage = '네이버 지도 API 로드에 실패했습니다.';
-          });
-        });
-
-        // HTML head에 스크립트 추가
-        html.document.head!.append(script);
-      } catch (e) {
-        print('네이버 지도 API 로딩 중 오류: $e');
-        setState(() {
-          _isLoading = false;
-          _errorMessage = '네이버 지도 API 로딩 중 오류가 발생했습니다.';
-        });
-      }
-    }
-  }
-
-  void _createMapElement() {
-    if (kIsWeb && _isApiLoaded) {
-      // HTML 요소 생성
-      final mapElement =
-          html.DivElement()
-            ..id = _mapElementId
-            ..style.width = '100%'
-            ..style.height = '100%';
-
-      // Flutter 웹에서 HTML 요소 등록
-      ui_web.platformViewRegistry.registerViewFactory(
-        _mapElementId,
-        (int viewId) => mapElement,
-      );
-
-      // 지도 초기화를 위한 지연 실행
-      Future.delayed(Duration(milliseconds: 500), () {
-        _initializeMap();
+      _initializeWebMap();
+    } else {
+      setState(() {
+        _isLoading = false;
+        _errorMessage = '이 위젯은 웹에서만 사용 가능합니다.';
       });
     }
   }
 
-  void _initializeMap() {
-    if (kIsWeb && _isApiLoaded) {
-      try {
-        // JavaScript 코드 실행
-        js.context.callMethod('eval', [
-          '''
-          (function() {
-            // 네이버 지도 API가 로드되었는지 확인
+  Future<void> _initializeWebMap() async {
+    if (!kIsWeb) return;
+
+    try {
+      // 환경 변수에서 클라이언트 ID 확인
+      final clientId = EnvConfig.naverMapsClientId;
+      if (clientId.isEmpty) {
+        setState(() {
+          _isLoading = false;
+          _errorMessage =
+              '네이버 지도 클라이언트 ID가 설정되지 않았습니다.\n.env 파일에 NAVER_MAP_CLIENT_ID를 설정해주세요.';
+        });
+        return;
+      }
+
+      // HTML 요소 생성 (웹에서만)
+      final mapElement =
+          html.DivElement()
+            ..id = _mapElementId
+            ..style.width = '100%'
+            ..style.height = '100%'
+            ..style.border = 'none';
+
+      // Flutter 웹에서 HTML 요소 등록
+      ui.platformViewRegistry.registerViewFactory(
+        _mapElementId,
+        (int viewId) => mapElement,
+      );
+
+      // 네이버 지도 스크립트 로드 및 초기화
+      await _loadNaverMapScript(clientId);
+    } catch (e) {
+      print('웹 지도 초기화 오류: $e');
+      setState(() {
+        _isLoading = false;
+        _errorMessage = '지도 초기화 중 오류가 발생했습니다: $e';
+      });
+    }
+  }
+
+  Future<void> _loadNaverMapScript(String clientId) async {
+    if (!kIsWeb) return;
+
+    try {
+      // 네이버 지도 API 스크립트 동적 로드
+      final script =
+          html.ScriptElement()
+            ..type = 'text/javascript'
+            ..src =
+                'https://oapi.map.naver.com/openapi/v3/maps.js?ncpClientId=$clientId';
+
+      final completer = Completer<void>();
+
+      script.onLoad.listen((event) {
+        print('네이버 지도 API 로드 완료');
+        completer.complete();
+      });
+
+      script.onError.listen((event) {
+        print('네이버 지도 API 로드 실패');
+        completer.completeError('네이버 지도 API 로드 실패');
+      });
+
+      html.document.head!.append(script);
+      await completer.future;
+
+      // 지도 초기화
+      await _initializeMap();
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+        _errorMessage = '네이버 지도 API 로드 실패: $e';
+      });
+    }
+  }
+
+  Future<void> _initializeMap() async {
+    if (!kIsWeb) return;
+
+    try {
+      // 짧은 지연 후 지도 초기화
+      await Future.delayed(Duration(milliseconds: 300));
+
+      // JavaScript로 지도 초기화
+      final jsCode = '''
+        (function() {
+          try {
             if (typeof naver === 'undefined' || typeof naver.maps === 'undefined') {
               console.error('네이버 지도 API가 로드되지 않았습니다.');
-              return;
+              return false;
             }
 
             var mapOptions = {
@@ -159,16 +155,32 @@ class _NaverMapWebState extends State<NaverMapWeb> {
             var map = new naver.maps.Map('$_mapElementId', mapOptions);
             
             // 마커 추가
-            var markers = [];
             ${_generateMarkersScript()}
             
             console.log('네이버 지도 초기화 완료');
-          })();
-        ''',
-        ]);
-      } catch (e) {
-        print('네이버 지도 초기화 오류: $e');
+            return true;
+          } catch (error) {
+            console.error('지도 초기화 오류:', error);
+            return false;
+          }
+        })();
+      ''';
+
+      final result = js.context.callMethod('eval', [jsCode]);
+
+      if (result == true) {
+        setState(() {
+          _isLoading = false;
+        });
+      } else {
+        throw Exception('지도 초기화 실패');
       }
+    } catch (e) {
+      print('지도 초기화 오류: $e');
+      setState(() {
+        _isLoading = false;
+        _errorMessage = '지도 초기화 실패: $e';
+      });
     }
   }
 
@@ -179,9 +191,9 @@ class _NaverMapWebState extends State<NaverMapWeb> {
       final marker = widget.markers[i];
       final lat = marker['latitude'];
       final lng = marker['longitude'];
-      final name = marker['name'] ?? '';
+      final name = (marker['name'] ?? '').toString().replaceAll("'", "\\'");
       final score = marker['score'] ?? 0;
-      final price = marker['price'] ?? '';
+      final price = (marker['price'] ?? '').toString().replaceAll("'", "\\'");
 
       script.writeln('''
         var marker$i = new naver.maps.Marker({
@@ -208,8 +220,6 @@ class _NaverMapWebState extends State<NaverMapWeb> {
             infoWindow$i.open(map, marker$i);
           }
         });
-        
-        markers.push(marker$i);
       ''');
     }
 
@@ -232,10 +242,6 @@ class _NaverMapWebState extends State<NaverMapWeb> {
 
   @override
   Widget build(BuildContext context) {
-    if (!kIsWeb) {
-      return Container(child: Center(child: Text('웹에서만 사용 가능한 지도입니다.')));
-    }
-
     if (_isLoading) {
       return Container(
         width: double.infinity,
@@ -292,15 +298,22 @@ class _NaverMapWebState extends State<NaverMapWeb> {
                 ),
               ),
               SizedBox(height: 8),
-              Text(
-                _errorMessage!,
-                style: TextStyle(fontSize: 14, color: Colors.red[700]),
-                textAlign: TextAlign.center,
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: 32),
+                child: Text(
+                  _errorMessage!,
+                  style: TextStyle(fontSize: 14, color: Colors.red[700]),
+                  textAlign: TextAlign.center,
+                ),
               ),
             ],
           ),
         ),
       );
+    }
+
+    if (!kIsWeb) {
+      return Container(child: Center(child: Text('웹에서만 사용 가능한 지도입니다.')));
     }
 
     return Container(

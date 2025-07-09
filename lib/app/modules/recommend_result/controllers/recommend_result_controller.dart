@@ -16,6 +16,9 @@ class RecommendResultController extends GetxController {
   // 로딩 상태
   var isLoading = true.obs; // 초기값을 true로 설정
 
+  // 오늘의 메뉴 없음 상태
+  var isNoMenuToday = false.obs;
+
   // 1~3위 메뉴 (초기값은 빈 리스트)
   final topMenus = <Map<String, dynamic>>[].obs;
 
@@ -94,6 +97,7 @@ class RecommendResultController extends GetxController {
     // 기존 데이터 즉시 초기화
     topMenus.clear();
     isLoading.value = true;
+    isNoMenuToday.value = false; // 오늘의 메뉴 없음 상태도 초기화
 
     if (isInside) {
       // 사내 추천 - 서버에서 새로운 데이터 받아오기
@@ -208,6 +212,7 @@ class RecommendResultController extends GetxController {
   Future<void> _loadIndoorRecommendations() async {
     try {
       isLoading.value = true;
+      isNoMenuToday.value = false; // 요청 시작 시 상태 초기화
 
       final response = await _apiService.get('/users/indoor');
 
@@ -237,6 +242,20 @@ class RecommendResultController extends GetxController {
 
           topMenus.value = convertedMenus;
           print('사내 추천 데이터 로드 완료: ${topMenus.length}개');
+        } else {
+          // 응답은 성공했지만 데이터가 없거나 실패인 경우
+          final errorCode = responseData['code'];
+          final errorMessage =
+              responseData['message'] ?? '사내 추천 데이터를 불러오는데 실패했습니다.';
+
+          if (errorCode == 4014) {
+            // 오늘의 메뉴가 등록되지 않은 경우
+            isNoMenuToday.value = true;
+          } else {
+            Get.snackbar('오류', errorMessage);
+          }
+
+          print('사내 추천 API 응답 오류: $errorMessage (코드: $errorCode)');
         }
       }
     } catch (e) {

@@ -11,10 +11,10 @@ import 'package:pududuk_app/app/services/api_service.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // 환경 변수 로드
+  // 환경 변수 로드five0401
   await EnvConfig.load();
 
-  // API 서비스 초기화
+  // API 서비스 초기화  
   final apiService = Get.put(ApiService());
 
   // 저장된 토큰 자동 로드
