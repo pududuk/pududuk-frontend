@@ -14,56 +14,10 @@ class RecommendResultController extends GetxController {
   final ApiService _apiService = Get.find<ApiService>();
 
   // 로딩 상태
-  var isLoading = false.obs;
+  var isLoading = true.obs; // 초기값을 true로 설정
 
-  // 1~3위 메뉴 (기본값은 사외 데이터)
-  final topMenus =
-      <Map<String, dynamic>>[
-        {
-          'name': '홀리즉떡',
-          'score': 92,
-          'image':
-              'https://search.pstatic.net/common/?autoRotate=true&quality=95&type=f320_320&src=https%3A%2F%2Fldb-phinf.pstatic.net%2F20250629_217%2F1751205189369TKPx5_JPEG%2FIMG_9942.jpeg',
-          'latitude': 37.55905430305593,
-          'longitude': 126.82859334598922,
-          'price': '15,000',
-        },
-        {
-          'name': '흥탄양갈비 마곡본점',
-          'score': 92,
-          'image':
-              'https://search.pstatic.net/common/?autoRotate=true&quality=95&type=f320_320&src=https%3A%2F%2Fldb-phinf.pstatic.net%2F20200628_283%2F1593328413878kPwua_JPEG%2F7CNwoLKqyMthvIe40a019CS0.jpg',
-          'latitude': 37.559878832899585,
-          'longitude': 126.8291562863812,
-          'price': '30,000',
-        },
-        {
-          'name': '나룻목 마곡나루역점',
-          'score': 92,
-          'image':
-              'https://search.pstatic.net/common/?autoRotate=true&quality=95&type=f320_320&src=https%3A%2F%2Fldb-phinf.pstatic.net%2F20250529_25%2F1748496606944RgdNx_JPEG%2FKakaoTalk_20250529_142907134_02.jpg',
-          'latitude': 37.56731824213836,
-          'longitude': 126.82700200214423,
-          // 'price': '16,900',
-        },
-        {
-          'name': '예향정 마곡점',
-          'score': 92,
-          'image': '',
-          'latitude': 37.5678688,
-          'longitude': 126.8265941,
-          'price': '8,000',
-        },
-        {
-          'name': '쇼쿠 이자카야',
-          'score': 89,
-          'image':
-              'https://search.pstatic.net/common/?autoRotate=true&quality=95&type=f320_320&src=https%3A%2F%2Fldb-phinf.pstatic.net%2F20250619_157%2F1750316153284HHone_JPEG%2FKakaoTalk_20250619_155400664_02.jpg',
-          'latitude': 37.56095210066757,
-          'longitude': 126.82881756217137,
-          'price': '23,000',
-        },
-      ].obs;
+  // 1~3위 메뉴 (초기값은 빈 리스트)
+  final topMenus = <Map<String, dynamic>>[].obs;
 
   // 4위 이후 메뉴 (topMenus에서 상위 3개를 제외한 나머지)
   RxList<Map<String, dynamic>> get otherMenus {
@@ -75,6 +29,8 @@ class RecommendResultController extends GetxController {
           return {
             'rank': topMenus.indexOf(menu) + 1,
             'name': menu['name'],
+            'menu': menu['menu'], // 메뉴명 추가
+            'store': menu['store'], // 매장명 추가
             'score': menu['score'],
             'image': menu['image'],
             'latitude': menu['latitude'],
@@ -135,6 +91,10 @@ class RecommendResultController extends GetxController {
   void onRetry() {
     print('다시 추천받기 버튼 클릭 - affiliation: ${affiliation.value}');
 
+    // 기존 데이터 즉시 초기화
+    topMenus.clear();
+    isLoading.value = true;
+
     if (isInside) {
       // 사내 추천 - 서버에서 새로운 데이터 받아오기
       _loadIndoorRecommendations();
@@ -144,9 +104,8 @@ class RecommendResultController extends GetxController {
         snackPosition: SnackPosition.BOTTOM,
       );
     } else {
-      // 사외 추천 - 서버에서 새로운 데이터 받아오기 (추후 구현)
-      // TODO: 사외 추천 API 호출 추가
-      _loadOutdoorRecommendations();
+      // 사외 추천 - 서버에서 새로운 데이터 받아오기
+      _loadOutdoorRecommendations(showSuccessMessage: true);
       Get.snackbar(
         '알림',
         '새로운 사외 추천을 받아오고 있습니다...',
@@ -266,7 +225,7 @@ class RecommendResultController extends GetxController {
                   'name':
                       '${_convertStoreName(item['store'])} ${item['corner']}',
                   'score': item['score'],
-                  'image': '', // 사내 식당은 이미지 없음
+                  'image': item['imgUrl'] ?? '', // 서버에서 제공하는 이미지 URL 사용
                   'menu': item['menu'],
                   'waiting_pred': item['waiting_pred'],
                   'comment': item['comment'],
@@ -294,7 +253,10 @@ class RecommendResultController extends GetxController {
 
     switch (storeName.toLowerCase()) {
       case 'ourhome':
+      case 'our_home':
         return '아워홈';
+      case 'cj_fresh':
+        return 'CJ프레시';
       default:
         return storeName;
     }
@@ -305,7 +267,9 @@ class RecommendResultController extends GetxController {
   bool get isOutside => affiliation.value == 'outside';
 
   // 사외 추천 데이터를 서버에서 가져오기
-  Future<void> _loadOutdoorRecommendations() async {
+  Future<void> _loadOutdoorRecommendations({
+    bool showSuccessMessage = false,
+  }) async {
     try {
       isLoading.value = true;
 
@@ -320,28 +284,31 @@ class RecommendResultController extends GetxController {
         final List<Map<String, dynamic>> convertedMenus =
             resultList.map((item) {
               return {
-                'name': item['store'] ?? '',
+                'name': item['store'] ?? '', // 가게명만 표시
                 'menu': item['menu'] ?? '',
+                'store': item['store'] ?? '',
                 'score': item['score'] ?? 0,
                 'price': _formatPrice(item['price']),
                 'rank': item['rank'] ?? 0,
                 'comment': item['comment'] ?? '',
-                // latitude와 longitude는 나중에 추가될 예정
-                'latitude': item['latitude'] ?? 0.0,
-                'longitude': item['longitude'] ?? 0.0,
-                'image': '', // 이미지는 기본값으로 설정 (웹에서는 기본 이미지 사용)
+                // latitude와 longitude를 문자열에서 double로 변환
+                'latitude': _parseDouble(item['latitude']),
+                'longitude': _parseDouble(item['longitude']),
+                'image': item['imgUrl'] ?? '', // 서버에서 제공하는 이미지 URL 사용
               };
             }).toList();
 
         topMenus.value = convertedMenus;
         print('사외 추천 데이터 로드 완료: ${topMenus.length}개');
 
-        // 성공 메시지
-        Get.snackbar(
-          '완료',
-          '새로운 사외 추천을 받아왔습니다!',
-          snackPosition: SnackPosition.BOTTOM,
-        );
+        // 재시도일 때만 성공 메시지 표시
+        if (showSuccessMessage) {
+          Get.snackbar(
+            '완료',
+            '새로운 사외 추천을 받아왔습니다!',
+            snackPosition: SnackPosition.BOTTOM,
+          );
+        }
       } else {
         print('사외 추천 API 응답 오류: ${response.data['message']}');
         Get.snackbar(
@@ -368,5 +335,25 @@ class RecommendResultController extends GetxController {
 
     // 이미 문자열인 경우 그대로 반환
     return price.toString();
+  }
+
+  // 문자열 또는 숫자를 double로 안전하게 변환하는 함수
+  double _parseDouble(dynamic value) {
+    if (value == null) return 0.0;
+
+    if (value is double) return value;
+    if (value is int) return value.toDouble();
+
+    // 문자열인 경우 파싱 시도
+    if (value is String) {
+      try {
+        return double.parse(value);
+      } catch (e) {
+        print('좌표 파싱 실패: $value, 오류: $e');
+        return 0.0;
+      }
+    }
+
+    return 0.0;
   }
 }

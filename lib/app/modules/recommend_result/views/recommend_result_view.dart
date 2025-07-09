@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:flutter/foundation.dart';
 import '../../../utils/app_colors.dart';
 import '../../../utils/platform_utils.dart';
+import '../../../utils/env_config.dart';
 import '../controllers/recommend_result_controller.dart';
 import 'package:screenshot/screenshot.dart';
 
@@ -129,19 +130,44 @@ class RecommendResultView extends GetView<RecommendResultController> {
                             ),
                           ),
                           const SizedBox(height: 16),
-                          // 추천 완료! 텍스트
-                          const Text(
-                            '추천 완료!',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 22,
-                            ),
-                          ),
-                          const SizedBox(height: 6),
-                          const Text(
-                            '당신을 위한 맞춤 메뉴를 찾았어요',
-                            style: TextStyle(color: Colors.black54),
-                          ),
+                          // 추천 상태에 따른 동적 텍스트
+                          Obx(() {
+                            if (controller.isLoading.value) {
+                              return Column(
+                                children: [
+                                  Text(
+                                    '찾고 있는 중...',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 22,
+                                    ),
+                                  ),
+                                  SizedBox(height: 6),
+                                  Text(
+                                    '당신을 위한 맞춤 메뉴를 찾고 있어요',
+                                    style: TextStyle(color: Colors.black54),
+                                  ),
+                                ],
+                              );
+                            } else {
+                              return Column(
+                                children: [
+                                  Text(
+                                    '추천 완료!',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 22,
+                                    ),
+                                  ),
+                                  SizedBox(height: 6),
+                                  Text(
+                                    '당신을 위한 맞춤 메뉴를 찾았어요',
+                                    style: TextStyle(color: Colors.black54),
+                                  ),
+                                ],
+                              );
+                            }
+                          }),
                         ],
                       ),
                     ),
@@ -221,17 +247,6 @@ class RecommendResultView extends GetView<RecommendResultController> {
                                 child: Container(
                                   decoration: BoxDecoration(
                                     borderRadius: BorderRadius.circular(12),
-                                    gradient:
-                                        index == 0
-                                            ? LinearGradient(
-                                              colors: [
-                                                AppColors.main.withOpacity(0.1),
-                                                Colors.white,
-                                              ],
-                                              begin: Alignment.topLeft,
-                                              end: Alignment.bottomRight,
-                                            )
-                                            : null,
                                   ),
                                   child: Padding(
                                     padding: EdgeInsets.all(16),
@@ -241,6 +256,67 @@ class RecommendResultView extends GetView<RecommendResultController> {
                                       children: [
                                         Row(
                                           children: [
+                                            // 메뉴 이미지 추가
+                                            Container(
+                                              width: 60,
+                                              height: 60,
+                                              decoration: BoxDecoration(
+                                                borderRadius:
+                                                    BorderRadius.circular(8),
+                                                border: Border.all(
+                                                  color: Colors.grey[300]!,
+                                                  width: 1,
+                                                ),
+                                              ),
+                                              child: ClipRRect(
+                                                borderRadius:
+                                                    BorderRadius.circular(8),
+                                                child:
+                                                    (menu['image'] != null &&
+                                                            (menu['image']
+                                                                    as String)
+                                                                .isNotEmpty)
+                                                        ? Image(
+                                                          image: getMenuImage(
+                                                            menu['image']
+                                                                as String?,
+                                                          ),
+                                                          fit: BoxFit.cover,
+                                                          errorBuilder: (
+                                                            context,
+                                                            error,
+                                                            stackTrace,
+                                                          ) {
+                                                            return Container(
+                                                              color:
+                                                                  Colors
+                                                                      .grey[200],
+                                                              child: Icon(
+                                                                Icons
+                                                                    .restaurant,
+                                                                color:
+                                                                    Colors
+                                                                        .grey[600],
+                                                                size: 24,
+                                                              ),
+                                                            );
+                                                          },
+                                                        )
+                                                        : Container(
+                                                          color:
+                                                              Colors.grey[200],
+                                                          child: Icon(
+                                                            Icons.restaurant,
+                                                            color:
+                                                                Colors
+                                                                    .grey[600],
+                                                            size: 24,
+                                                          ),
+                                                        ),
+                                              ),
+                                            ),
+                                            SizedBox(width: 16),
+                                            // 순위 표시
                                             Container(
                                               width: 40,
                                               height: 40,
@@ -443,6 +519,63 @@ class RecommendResultView extends GetView<RecommendResultController> {
                                   children: [
                                     Row(
                                       children: [
+                                        // 메뉴 이미지 추가
+                                        Container(
+                                          width: 50,
+                                          height: 50,
+                                          decoration: BoxDecoration(
+                                            borderRadius: BorderRadius.circular(
+                                              8,
+                                            ),
+                                            border: Border.all(
+                                              color: Colors.grey[300]!,
+                                              width: 1,
+                                            ),
+                                          ),
+                                          child: ClipRRect(
+                                            borderRadius: BorderRadius.circular(
+                                              8,
+                                            ),
+                                            child:
+                                                (menu['image'] != null &&
+                                                        (menu['image']
+                                                                as String)
+                                                            .isNotEmpty)
+                                                    ? Image(
+                                                      image: getMenuImage(
+                                                        menu['image']
+                                                            as String?,
+                                                      ),
+                                                      fit: BoxFit.cover,
+                                                      errorBuilder: (
+                                                        context,
+                                                        error,
+                                                        stackTrace,
+                                                      ) {
+                                                        return Container(
+                                                          color:
+                                                              Colors.grey[200],
+                                                          child: Icon(
+                                                            Icons.restaurant,
+                                                            color:
+                                                                Colors
+                                                                    .grey[600],
+                                                            size: 20,
+                                                          ),
+                                                        );
+                                                      },
+                                                    )
+                                                    : Container(
+                                                      color: Colors.grey[200],
+                                                      child: Icon(
+                                                        Icons.restaurant,
+                                                        color: Colors.grey[600],
+                                                        size: 20,
+                                                      ),
+                                                    ),
+                                          ),
+                                        ),
+                                        SizedBox(width: 12),
                                         Container(
                                           width: 30,
                                           height: 30,
@@ -606,18 +739,29 @@ class RecommendResultView extends GetView<RecommendResultController> {
                                           : null,
                                   radius: 22,
                                 ),
-                                title: SizedBox(
-                                  width: 120,
-                                  child: Text(
-                                    '\t${menu['rank']}. ${menu['name']}',
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    softWrap: false,
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 15,
+                                title: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      '${menu['rank']}. ${menu['store'] ?? ''}',
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 15,
+                                      ),
                                     ),
-                                  ),
+                                    SizedBox(height: 2),
+                                    Text(
+                                      '${menu['menu'] ?? ''}',
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        color: Colors.grey[600],
+                                      ),
+                                    ),
+                                  ],
                                 ),
                                 subtitle: Text(
                                   '${menu['score']}점',
@@ -815,9 +959,14 @@ class RecommendResultView extends GetView<RecommendResultController> {
     if (imagePath == null || imagePath.isEmpty) {
       return AssetImage('assets/image/default.png');
     } else if (imagePath.startsWith('http')) {
-      // 웹에서는 CORS 문제로 외부 이미지 사용 불가, 기본 이미지 사용
-      if (kIsWeb) {
-        return AssetImage('assets/image/default.png');
+      // 웹에서 네이버 이미지는 백엔드 프록시를 통해 제공
+      if (kIsWeb &&
+          (imagePath.contains('search.pstatic.net') ||
+              imagePath.contains('ldb-phinf.pstatic.net'))) {
+        final proxyUrl =
+            '${EnvConfig.apiBaseUrl}/proxy/image?url=${Uri.encodeComponent(imagePath)}';
+        print('웹에서 네이버 이미지 프록시 사용: $proxyUrl');
+        return NetworkImage(proxyUrl);
       }
       return NetworkImage(imagePath);
     } else {

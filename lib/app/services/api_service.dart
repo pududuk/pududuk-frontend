@@ -15,10 +15,16 @@ class ApiService extends GetxService {
   void _initializeDio() {
     _dio = Dio();
 
-    // 기본 설정
-    _dio.options.connectTimeout = const Duration(seconds: 10);
-    _dio.options.receiveTimeout = const Duration(seconds: 10);
+    // 기본 설정 - 타임아웃을 5분(300초)으로 설정
+    _dio.options.connectTimeout = const Duration(seconds: 300); // 5분
+    _dio.options.receiveTimeout = const Duration(seconds: 300); // 5분
+    _dio.options.sendTimeout = const Duration(seconds: 300); // 5분 (전송 시간도 추가)
     _dio.options.headers = {'Content-Type': 'application/json'};
+
+    print('🕐 ApiService 초기화 - 타임아웃 설정:');
+    print('   connectTimeout: ${_dio.options.connectTimeout}');
+    print('   receiveTimeout: ${_dio.options.receiveTimeout}');
+    print('   sendTimeout: ${_dio.options.sendTimeout}');
 
     // 웹에서 CORS 문제 해결을 위한 추가 헤더 설정
     if (kIsWeb) {
@@ -40,6 +46,9 @@ class ApiService extends GetxService {
         onRequest: (options, handler) {
           print('🚀 요청: ${options.method} ${options.path}');
           print('📝 데이터: ${options.data}');
+          print(
+            '🕐 요청 타임아웃: ${options.connectTimeout}, ${options.receiveTimeout}, ${options.sendTimeout}',
+          );
           handler.next(options);
         },
         onResponse: (response, handler) {
@@ -51,6 +60,9 @@ class ApiService extends GetxService {
         onError: (error, handler) {
           print('❌ 에러: ${error.message}');
           print('📍 에러 응답: ${error.response?.data}');
+          print(
+            '🕐 에러 시 타임아웃 설정: ${error.requestOptions.connectTimeout}, ${error.requestOptions.receiveTimeout}',
+          );
           handler.next(error);
         },
       ),
@@ -64,6 +76,13 @@ class ApiService extends GetxService {
     Options? options,
   }) async {
     try {
+      // 요청 전에 타임아웃 설정 재확인
+      _dio.options.connectTimeout = const Duration(seconds: 300);
+      _dio.options.receiveTimeout = const Duration(seconds: 300);
+      _dio.options.sendTimeout = const Duration(seconds: 300);
+
+      print('🕐 GET 요청 타임아웃 설정: ${_dio.options.receiveTimeout}');
+
       return await _dio.get<T>(
         EnvConfig.apiBaseUrl + path,
         queryParameters: queryParameters,
@@ -83,6 +102,13 @@ class ApiService extends GetxService {
     Options? options,
   }) async {
     try {
+      // 요청 전에 타임아웃 설정 재확인
+      _dio.options.connectTimeout = const Duration(seconds: 300);
+      _dio.options.receiveTimeout = const Duration(seconds: 300);
+      _dio.options.sendTimeout = const Duration(seconds: 300);
+
+      print('🕐 POST 요청 타임아웃 설정: ${_dio.options.receiveTimeout}');
+
       return await _dio.post<T>(
         EnvConfig.apiBaseUrl + path,
         data: data,
@@ -103,6 +129,13 @@ class ApiService extends GetxService {
     Options? options,
   }) async {
     try {
+      // 요청 전에 타임아웃 설정 재확인
+      _dio.options.connectTimeout = const Duration(seconds: 300);
+      _dio.options.receiveTimeout = const Duration(seconds: 300);
+      _dio.options.sendTimeout = const Duration(seconds: 300);
+
+      print('🕐 PUT 요청 타임아웃 설정: ${_dio.options.receiveTimeout}');
+
       return await _dio.put<T>(
         EnvConfig.apiBaseUrl + path,
         data: data,
@@ -123,6 +156,13 @@ class ApiService extends GetxService {
     Options? options,
   }) async {
     try {
+      // 요청 전에 타임아웃 설정 재확인
+      _dio.options.connectTimeout = const Duration(seconds: 300);
+      _dio.options.receiveTimeout = const Duration(seconds: 300);
+      _dio.options.sendTimeout = const Duration(seconds: 300);
+
+      print('🕐 PATCH 요청 타임아웃 설정: ${_dio.options.receiveTimeout}');
+
       return await _dio.patch<T>(
         EnvConfig.apiBaseUrl + path,
         data: data,
@@ -143,6 +183,13 @@ class ApiService extends GetxService {
     Options? options,
   }) async {
     try {
+      // 요청 전에 타임아웃 설정 재확인
+      _dio.options.connectTimeout = const Duration(seconds: 300);
+      _dio.options.receiveTimeout = const Duration(seconds: 300);
+      _dio.options.sendTimeout = const Duration(seconds: 300);
+
+      print('🕐 DELETE 요청 타임아웃 설정: ${_dio.options.receiveTimeout}');
+
       return await _dio.delete<T>(
         EnvConfig.apiBaseUrl + path,
         data: data,

@@ -13,6 +13,7 @@ class SurveyController extends GetxController {
   var restrictions = ''.obs;
   var hasExistingData = false.obs;
   var isLoading = false.obs;
+  var isInitialLoading = true.obs;
 
   final ageController = TextEditingController(text: '25');
   final maxPriceController = TextEditingController();
@@ -39,6 +40,8 @@ class SurveyController extends GetxController {
   // 서버에서 설문조사 데이터 가져오기
   Future<void> _loadSurveyFromServer() async {
     try {
+      isInitialLoading.value = true;
+
       final response = await _apiService.get('/users/profile');
 
       if (response.statusCode == 200) {
@@ -63,6 +66,8 @@ class SurveyController extends GetxController {
       print('서버 데이터 로드 중 오류: $e');
       // 오류 발생 시 기본값 사용
       _setDefaultValues();
+    } finally {
+      isInitialLoading.value = false;
     }
   }
 
@@ -75,7 +80,7 @@ class SurveyController extends GetxController {
         ageController.text = surveyData['age'].toString();
       }
 
-      // 성별 (서버: Male/Female → UI: male/female)
+      // 성별 (서버에서 받은 값을 소문자로 변환)
       if (surveyData['gender'] != null) {
         gender.value = surveyData['gender'].toString().toLowerCase();
       }
@@ -136,8 +141,8 @@ class SurveyController extends GetxController {
     isLoading.value = true;
 
     try {
-      // 성별 값을 서버 형식으로 변환
-      String genderForServer = gender.value == 'male' ? 'Male' : 'Female';
+      // 성별 값을 서버 형식으로 변환 (소문자로 변경)
+      String genderForServer = gender.value; // 'male' 또는 'female' 그대로 사용
 
       // 설문조사 데이터를 JSON 바디로 구성
       final surveyData = {

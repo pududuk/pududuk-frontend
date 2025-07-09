@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
 import '../../../utils/app_colors.dart';
+import '../../../utils/env_config.dart';
 import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 import '../controllers/recommend_result_controller.dart';
 import 'dart:ui' as ui;
 import 'dart:typed_data';
+import 'naver_map_web.dart';
 
 class MapResultView extends StatefulWidget {
   const MapResultView({Key? key}) : super(key: key);
@@ -295,54 +297,32 @@ class _MapResultViewState extends State<MapResultView> {
                       height: 250,
                       child:
                           kIsWeb
-                              ? // 웹에서는 지도 대신 대체 UI 표시
+                              ? // 웹에서는 네이버 지도 웹 API 사용
                               ClipRRect(
                                 borderRadius: BorderRadius.circular(16),
-                                child: Container(
-                                  width: double.infinity,
-                                  height: 250,
-                                  decoration: BoxDecoration(
-                                    gradient: LinearGradient(
-                                      begin: Alignment.topLeft,
-                                      end: Alignment.bottomRight,
-                                      colors: [
-                                        AppColors.main.withOpacity(0.1),
-                                        AppColors.main.withOpacity(0.3),
-                                      ],
-                                    ),
-                                  ),
-                                  child: Center(
-                                    child: Column(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      children: [
-                                        Icon(
-                                          Icons.map_outlined,
-                                          size: 60,
-                                          color: AppColors.main.withOpacity(
-                                            0.7,
-                                          ),
-                                        ),
-                                        SizedBox(height: 16),
-                                        Text(
-                                          '지도 기능',
-                                          style: TextStyle(
-                                            fontSize: 20,
-                                            fontWeight: FontWeight.bold,
-                                            color: AppColors.main,
-                                          ),
-                                        ),
-                                        SizedBox(height: 8),
-                                        Text(
-                                          '모바일 앱에서 이용 가능합니다',
-                                          style: TextStyle(
-                                            fontSize: 14,
-                                            color: Colors.grey[600],
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
+                                child: NaverMapWeb(
+                                  latitude: centerLat,
+                                  longitude: centerLng,
+                                  markers:
+                                      controller.topMenus.map((menu) {
+                                        return {
+                                          'latitude':
+                                              (menu['latitude'] as num?)
+                                                  ?.toDouble() ??
+                                              0.0,
+                                          'longitude':
+                                              (menu['longitude'] as num?)
+                                                  ?.toDouble() ??
+                                              0.0,
+                                          'name': menu['name'] ?? '',
+                                          'score': menu['score'] ?? 0,
+                                          'price': menu['price'] ?? '',
+                                        };
+                                      }).toList(),
+                                  onMarkerTap: (index) {
+                                    // 마커 클릭 시 처리
+                                    print('마커 클릭: $index');
+                                  },
                                 ),
                               )
                               : // 모바일에서는 네이버 지도 표시
@@ -722,11 +702,33 @@ class _MapResultViewState extends State<MapResultView> {
         final lngValue = firstMenu['longitude'];
 
         if (latValue != null && lngValue != null) {
-          final lat = (latValue as num).toDouble();
-          final lng = (lngValue as num).toDouble();
+          // 안전한 타입 변환 - String이나 num 모두 처리
+          double? lat;
+          double? lng;
 
-          // 유효한 좌표인지 확인
-          if (!lat.isNaN && !lat.isInfinite && !lng.isNaN && !lng.isInfinite) {
+          try {
+            if (latValue is String) {
+              lat = double.tryParse(latValue);
+            } else if (latValue is num) {
+              lat = latValue.toDouble();
+            }
+
+            if (lngValue is String) {
+              lng = double.tryParse(lngValue);
+            } else if (lngValue is num) {
+              lng = lngValue.toDouble();
+            }
+          } catch (e) {
+            print('좌표 변환 실패: $e');
+            return;
+          }
+
+          if (lat != null &&
+              lng != null &&
+              !lat.isNaN &&
+              !lat.isInfinite &&
+              !lng.isNaN &&
+              !lng.isInfinite) {
             // 1위 메뉴 정보창 생성 및 표시
             final infoText =
                 '1위. ${firstMenu['name']}\n${firstMenu['score']}점${firstMenu['price'] != null && (firstMenu['price'] as String).isNotEmpty ? ' • ${firstMenu['price']}' : ''}';
@@ -768,10 +770,33 @@ class _MapResultViewState extends State<MapResultView> {
         final lngValue = selectedMenu['longitude'];
 
         if (latValue != null && lngValue != null) {
-          final lat = (latValue as num).toDouble();
-          final lng = (lngValue as num).toDouble();
+          // 안전한 타입 변환 - String이나 num 모두 처리
+          double? lat;
+          double? lng;
 
-          if (!lat.isNaN && !lat.isInfinite && !lng.isNaN && !lng.isInfinite) {
+          try {
+            if (latValue is String) {
+              lat = double.tryParse(latValue);
+            } else if (latValue is num) {
+              lat = latValue.toDouble();
+            }
+
+            if (lngValue is String) {
+              lng = double.tryParse(lngValue);
+            } else if (lngValue is num) {
+              lng = lngValue.toDouble();
+            }
+          } catch (e) {
+            print('좌표 변환 실패: $e');
+            return;
+          }
+
+          if (lat != null &&
+              lng != null &&
+              !lat.isNaN &&
+              !lat.isInfinite &&
+              !lng.isNaN &&
+              !lng.isInfinite) {
             // 카메라를 선택된 메뉴 위치로 이동
             final cameraUpdate = NCameraUpdate.scrollAndZoomTo(
               target: NLatLng(lat, lng),
@@ -1003,111 +1028,127 @@ class _MapResultViewState extends State<MapResultView> {
         final lngValue = menu['longitude'];
 
         if (latValue != null && lngValue != null) {
-          lat = (latValue as num).toDouble();
-          lng = (lngValue as num).toDouble();
+          // 안전한 타입 변환 - String이나 num 모두 처리
+          double? lat;
+          double? lng;
 
-          if (lat.isNaN || lat.isInfinite || lng.isNaN || lng.isInfinite) {
+          try {
+            if (latValue is String) {
+              lat = double.tryParse(latValue);
+            } else if (latValue is num) {
+              lat = latValue.toDouble();
+            }
+
+            if (lngValue is String) {
+              lng = double.tryParse(lngValue);
+            } else if (lngValue is num) {
+              lng = lngValue.toDouble();
+            }
+          } catch (e) {
+            print('좌표 변환 실패: $e');
             continue;
           }
 
-          if (lat < 33.0 || lat > 39.0 || lng < 124.0 || lng > 132.0) {
-            continue;
+          if (lat != null &&
+              lng != null &&
+              !lat.isNaN &&
+              !lat.isInfinite &&
+              !lng.isNaN &&
+              !lng.isInfinite) {
+            // 검색 결과에서의 새로운 순위에 따른 마커 색상
+            Color markerColor;
+            if (filteredIndex == 0) {
+              markerColor = Colors.red; // 검색 결과 1위
+            } else if (filteredIndex == 1) {
+              markerColor = Colors.orange; // 검색 결과 2위
+            } else if (filteredIndex == 2) {
+              markerColor = Colors.yellow; // 검색 결과 3위
+            } else {
+              final randomColors = [
+                Colors.blue,
+                Colors.green,
+                Colors.purple,
+                Colors.teal,
+                Colors.indigo,
+                Colors.pink,
+                Colors.cyan,
+                Colors.lime,
+                Colors.amber,
+                Colors.deepOrange,
+                Colors.lightBlue,
+                Colors.lightGreen,
+                Colors.deepPurple,
+                Colors.brown,
+                Colors.blueGrey,
+              ];
+              markerColor =
+                  randomColors[(filteredIndex - 3) % randomColors.length];
+            }
+
+            // 마커 순위를 필터링된 인덱스 기준으로 설정 (1, 2, 3...)
+            final markerRank = filteredIndex + 1; // 필터링된 결과에서의 순위
+            print('마커 순위 설정: $markerRank (필터링된 인덱스: $filteredIndex)');
+
+            final customIcon = await createCustomMarkerIcon(
+              markerColor,
+              markerRank,
+            );
+
+            // 검색 상태에 따라 다른 ID 사용
+            final markerId = 'search_$filteredIndex';
+            print('검색 마커 생성 - ID: $markerId, 순위: $markerRank');
+
+            final marker = NMarker(
+              id: markerId,
+              position: NLatLng(lat, lng),
+              size: const NSize(40, 40),
+              icon: customIcon,
+            );
+
+            mapController.addOverlay(marker);
+
+            // 마커 클릭 이벤트 설정
+            marker.setOnTapListener((NMarker marker) async {
+              if (currentOpenInfoWindowId != null) {
+                try {
+                  await mapController.deleteOverlay(
+                    NOverlayInfo(
+                      type: NOverlayType.infoWindow,
+                      id: currentOpenInfoWindowId!,
+                    ),
+                  );
+                } catch (e) {}
+              }
+
+              // 검색 상태에 따라 순위 표시 조정
+              final displayRank =
+                  filteredIndex + 1; // 필터링된 결과에서의 순위 (1, 2, 3...)
+              final infoText =
+                  '$displayRank위. ${menu['name']}\n${menu['score']}점${menu['price'] != null && (menu['price'] as String).isNotEmpty ? ' • ${menu['price']}' : ''}';
+              final infoWindow = NInfoWindow.onMap(
+                id: 'info_$filteredIndex',
+                text: infoText,
+                position: NLatLng(lat! + 0.0001, lng!),
+              );
+
+              infoWindow.setOnTapListener((NInfoWindow infoWindow) async {
+                await mapController.deleteOverlay(
+                  NOverlayInfo(
+                    type: NOverlayType.infoWindow,
+                    id: 'info_$filteredIndex',
+                  ),
+                );
+                currentOpenInfoWindowId = null;
+              });
+
+              await mapController.addOverlay(infoWindow);
+              currentOpenInfoWindowId = 'info_$filteredIndex';
+            });
           }
-        } else {
-          continue;
         }
       } catch (e) {
+        print('필터링된 마커 생성 실패: $e');
         continue;
-      }
-
-      if (lat != null && lng != null) {
-        // 검색 결과에서의 새로운 순위에 따른 마커 색상
-        Color markerColor;
-        if (filteredIndex == 0) {
-          markerColor = Colors.red; // 검색 결과 1위
-        } else if (filteredIndex == 1) {
-          markerColor = Colors.orange; // 검색 결과 2위
-        } else if (filteredIndex == 2) {
-          markerColor = Colors.yellow; // 검색 결과 3위
-        } else {
-          final randomColors = [
-            Colors.blue,
-            Colors.green,
-            Colors.purple,
-            Colors.teal,
-            Colors.indigo,
-            Colors.pink,
-            Colors.cyan,
-            Colors.lime,
-            Colors.amber,
-            Colors.deepOrange,
-            Colors.lightBlue,
-            Colors.lightGreen,
-            Colors.deepPurple,
-            Colors.brown,
-            Colors.blueGrey,
-          ];
-          markerColor = randomColors[(filteredIndex - 3) % randomColors.length];
-        }
-
-        // 마커 순위를 필터링된 인덱스 기준으로 설정 (1, 2, 3...)
-        final markerRank = filteredIndex + 1; // 필터링된 결과에서의 순위
-        print('마커 순위 설정: $markerRank (필터링된 인덱스: $filteredIndex)');
-
-        final customIcon = await createCustomMarkerIcon(
-          markerColor,
-          markerRank,
-        );
-
-        // 검색 상태에 따라 다른 ID 사용
-        final markerId = 'search_$filteredIndex';
-        print('검색 마커 생성 - ID: $markerId, 순위: $markerRank');
-
-        final marker = NMarker(
-          id: markerId,
-          position: NLatLng(lat, lng),
-          size: const NSize(40, 40),
-          icon: customIcon,
-        );
-
-        mapController.addOverlay(marker);
-
-        // 마커 클릭 이벤트 설정
-        marker.setOnTapListener((NMarker marker) async {
-          if (currentOpenInfoWindowId != null) {
-            try {
-              await mapController.deleteOverlay(
-                NOverlayInfo(
-                  type: NOverlayType.infoWindow,
-                  id: currentOpenInfoWindowId!,
-                ),
-              );
-            } catch (e) {}
-          }
-
-          // 검색 상태에 따라 순위 표시 조정
-          final displayRank = filteredIndex + 1; // 필터링된 결과에서의 순위 (1, 2, 3...)
-          final infoText =
-              '$displayRank위. ${menu['name']}\n${menu['score']}점${menu['price'] != null && (menu['price'] as String).isNotEmpty ? ' • ${menu['price']}' : ''}';
-          final infoWindow = NInfoWindow.onMap(
-            id: 'info_$filteredIndex',
-            text: infoText,
-            position: NLatLng(lat! + 0.0001, lng!),
-          );
-
-          infoWindow.setOnTapListener((NInfoWindow infoWindow) async {
-            await mapController.deleteOverlay(
-              NOverlayInfo(
-                type: NOverlayType.infoWindow,
-                id: 'info_$filteredIndex',
-              ),
-            );
-            currentOpenInfoWindowId = null;
-          });
-
-          await mapController.addOverlay(infoWindow);
-          currentOpenInfoWindowId = 'info_$filteredIndex';
-        });
       }
     }
   }
@@ -1125,10 +1166,33 @@ class _MapResultViewState extends State<MapResultView> {
         final lngValue = firstMenu['longitude'];
 
         if (latValue != null && lngValue != null) {
-          final lat = (latValue as num).toDouble();
-          final lng = (lngValue as num).toDouble();
+          // 안전한 타입 변환 - String이나 num 모두 처리
+          double? lat;
+          double? lng;
 
-          if (!lat.isNaN && !lat.isInfinite && !lng.isNaN && !lng.isInfinite) {
+          try {
+            if (latValue is String) {
+              lat = double.tryParse(latValue);
+            } else if (latValue is num) {
+              lat = latValue.toDouble();
+            }
+
+            if (lngValue is String) {
+              lng = double.tryParse(lngValue);
+            } else if (lngValue is num) {
+              lng = lngValue.toDouble();
+            }
+          } catch (e) {
+            print('좌표 변환 실패: $e');
+            return;
+          }
+
+          if (lat != null &&
+              lng != null &&
+              !lat.isNaN &&
+              !lat.isInfinite &&
+              !lng.isNaN &&
+              !lng.isInfinite) {
             final infoText =
                 '1위. ${firstMenu['name']}\n${firstMenu['score']}점${firstMenu['price'] != null && (firstMenu['price'] as String).isNotEmpty ? ' • ${firstMenu['price']}' : ''}';
 
@@ -1168,10 +1232,33 @@ class _MapResultViewState extends State<MapResultView> {
       final lngValue = firstMenu['longitude'];
 
       if (latValue != null && lngValue != null) {
-        final lat = (latValue as num).toDouble();
-        final lng = (lngValue as num).toDouble();
+        // 안전한 타입 변환 - String이나 num 모두 처리
+        double? lat;
+        double? lng;
 
-        if (!lat.isNaN && !lat.isInfinite && !lng.isNaN && !lng.isInfinite) {
+        try {
+          if (latValue is String) {
+            lat = double.tryParse(latValue);
+          } else if (latValue is num) {
+            lat = latValue.toDouble();
+          }
+
+          if (lngValue is String) {
+            lng = double.tryParse(lngValue);
+          } else if (lngValue is num) {
+            lng = lngValue.toDouble();
+          }
+        } catch (e) {
+          print('좌표 변환 실패: $e');
+          return;
+        }
+
+        if (lat != null &&
+            lng != null &&
+            !lat.isNaN &&
+            !lat.isInfinite &&
+            !lng.isNaN &&
+            !lng.isInfinite) {
           // 기존 정보창 닫기
           if (currentOpenInfoWindowId != null) {
             try {
@@ -1181,7 +1268,9 @@ class _MapResultViewState extends State<MapResultView> {
                   id: currentOpenInfoWindowId!,
                 ),
               );
-            } catch (e) {}
+            } catch (e) {
+              // 이미 삭제된 경우 무시
+            }
           }
 
           // 카메라 이동
@@ -1242,128 +1331,136 @@ class _MapResultViewState extends State<MapResultView> {
         final lngValue = menu['longitude'];
 
         if (latValue != null && lngValue != null) {
-          lat = (latValue as num).toDouble();
-          lng = (lngValue as num).toDouble();
+          // 안전한 타입 변환 - String이나 num 모두 처리
+          double? lat;
+          double? lng;
 
-          // NaN, Infinity 체크
-          if (lat.isNaN || lat.isInfinite || lng.isNaN || lng.isInfinite) {
-            print('유효하지 않은 좌표: menu $i, lat: $lat, lng: $lng');
+          try {
+            if (latValue is String) {
+              lat = double.tryParse(latValue);
+            } else if (latValue is num) {
+              lat = latValue.toDouble();
+            }
+
+            if (lngValue is String) {
+              lng = double.tryParse(lngValue);
+            } else if (lngValue is num) {
+              lng = lngValue.toDouble();
+            }
+          } catch (e) {
+            print('좌표 변환 실패: $e');
             continue;
           }
 
-          // 유효한 좌표 범위 체크 (대한민국 기준)
-          if (lat < 33.0 || lat > 39.0 || lng < 124.0 || lng > 132.0) {
-            print('좌표 범위 벗어남: menu $i, lat: $lat, lng: $lng');
-            continue;
+          if (lat != null &&
+              lng != null &&
+              !lat.isNaN &&
+              !lat.isInfinite &&
+              !lng.isNaN &&
+              !lng.isInfinite) {
+            // 순위에 따른 마커 색상 설정
+            Color markerColor;
+            if (i == 0) {
+              markerColor = Colors.red; // 1위 - 빨간색 (고정)
+            } else if (i == 1) {
+              markerColor = Colors.orange; // 2위 - 주황색 (고정)
+            } else if (i == 2) {
+              markerColor = Colors.yellow; // 3위 - 노란색 (고정)
+            } else {
+              // 4등부터는 다양한 색상 중 순위에 따라 고정된 색상 선택
+              final randomColors = [
+                Colors.blue,
+                Colors.green,
+                Colors.purple,
+                Colors.teal,
+                Colors.indigo,
+                Colors.pink,
+                Colors.cyan,
+                Colors.lime,
+                Colors.amber,
+                Colors.deepOrange,
+                Colors.lightBlue,
+                Colors.lightGreen,
+                Colors.deepPurple,
+                Colors.brown,
+                Colors.blueGrey,
+              ];
+              markerColor = randomColors[(i - 3) % randomColors.length];
+            }
+
+            // 검색 중일 때는 원본 마커 생성하지 않음 (이중 체크)
+            if (controller.searchQuery.value.isNotEmpty) {
+              print('검색 중이므로 원본 마커($i) 생성 건너뜀');
+              continue;
+            }
+
+            // 커스텀 마커 아이콘 생성 (원본 순서로 1, 2, 3...)
+            final markerNumber = i + 1; // 원본 순위
+            print('=== 원본 마커 생성 ===');
+            print('인덱스: $i');
+            print('마커번호: $markerNumber (원본 순위)');
+            print('메뉴: ${menu['name']}');
+            print('마커색상: $markerColor');
+
+            final customIcon = await createCustomMarkerIcon(
+              markerColor,
+              markerNumber,
+            );
+            print('원본 마커 아이콘 생성 완료 - 번호: $markerNumber');
+            print('=== 원본 마커 생성 완료 ===');
+
+            // 커스텀 마커 생성
+            final marker = NMarker(
+              id: 'menu_$i',
+              position: NLatLng(lat, lng),
+              size: const NSize(40, 40),
+              icon: customIcon,
+            );
+
+            mapController.addOverlay(marker);
+
+            // 마커 클릭 이벤트 설정
+            marker.setOnTapListener((NMarker marker) async {
+              // 이전 정보창이 열려있으면 닫기
+              if (currentOpenInfoWindowId != null) {
+                try {
+                  await mapController.deleteOverlay(
+                    NOverlayInfo(
+                      type: NOverlayType.infoWindow,
+                      id: currentOpenInfoWindowId!,
+                    ),
+                  );
+                } catch (e) {
+                  // 이미 삭제된 경우 무시
+                }
+              }
+
+              // 새로운 정보창 생성 및 열기 (마커 바로 위에 표시)
+              final infoText =
+                  '${i + 1}위. ${menu['name']}\n${menu['score']}점${menu['price'] != null && (menu['price'] as String).isNotEmpty ? ' • ${menu['price']}' : ''}';
+
+              final infoWindow = NInfoWindow.onMap(
+                id: 'info_$i',
+                text: infoText,
+                position: NLatLng(lat! + 0.0001, lng!), // 마커 위에 표시
+              );
+
+              // 정보창 클릭 이벤트 설정 (클릭 시 사라지도록)
+              infoWindow.setOnTapListener((NInfoWindow infoWindow) async {
+                await mapController.deleteOverlay(
+                  NOverlayInfo(type: NOverlayType.infoWindow, id: 'info_$i'),
+                );
+                currentOpenInfoWindowId = null;
+              });
+
+              await mapController.addOverlay(infoWindow);
+              currentOpenInfoWindowId = 'info_$i';
+            });
           }
-        } else {
-          print('좌표 데이터 없음: menu $i');
-          continue;
         }
       } catch (e) {
-        print('좌표 변환 실패: menu $i, error: $e');
+        print('원본 마커 생성 실패: $e');
         continue;
-      }
-
-      if (lat != null && lng != null) {
-        // 순위에 따른 마커 색상 설정
-        Color markerColor;
-        if (i == 0) {
-          markerColor = Colors.red; // 1위 - 빨간색 (고정)
-        } else if (i == 1) {
-          markerColor = Colors.orange; // 2위 - 주황색 (고정)
-        } else if (i == 2) {
-          markerColor = Colors.yellow; // 3위 - 노란색 (고정)
-        } else {
-          // 4등부터는 다양한 색상 중 순위에 따라 고정된 색상 선택
-          final randomColors = [
-            Colors.blue,
-            Colors.green,
-            Colors.purple,
-            Colors.teal,
-            Colors.indigo,
-            Colors.pink,
-            Colors.cyan,
-            Colors.lime,
-            Colors.amber,
-            Colors.deepOrange,
-            Colors.lightBlue,
-            Colors.lightGreen,
-            Colors.deepPurple,
-            Colors.brown,
-            Colors.blueGrey,
-          ];
-          markerColor = randomColors[(i - 3) % randomColors.length];
-        }
-
-        // 검색 중일 때는 원본 마커 생성하지 않음 (이중 체크)
-        if (controller.searchQuery.value.isNotEmpty) {
-          print('검색 중이므로 원본 마커($i) 생성 건너뜀');
-          continue;
-        }
-
-        // 커스텀 마커 아이콘 생성 (원본 순서로 1, 2, 3...)
-        final markerNumber = i + 1; // 원본 순위
-        print('=== 원본 마커 생성 ===');
-        print('인덱스: $i');
-        print('마커번호: $markerNumber (원본 순위)');
-        print('메뉴: ${menu['name']}');
-        print('마커색상: $markerColor');
-
-        final customIcon = await createCustomMarkerIcon(
-          markerColor,
-          markerNumber,
-        );
-        print('원본 마커 아이콘 생성 완료 - 번호: $markerNumber');
-        print('=== 원본 마커 생성 완료 ===');
-
-        // 커스텀 마커 생성
-        final marker = NMarker(
-          id: 'menu_$i',
-          position: NLatLng(lat, lng),
-          size: const NSize(40, 40),
-          icon: customIcon,
-        );
-
-        mapController.addOverlay(marker);
-
-        // 마커 클릭 이벤트 설정
-        marker.setOnTapListener((NMarker marker) async {
-          // 이전 정보창이 열려있으면 닫기
-          if (currentOpenInfoWindowId != null) {
-            try {
-              await mapController.deleteOverlay(
-                NOverlayInfo(
-                  type: NOverlayType.infoWindow,
-                  id: currentOpenInfoWindowId!,
-                ),
-              );
-            } catch (e) {
-              // 이미 삭제된 경우 무시
-            }
-          }
-
-          // 새로운 정보창 생성 및 열기 (마커 바로 위에 표시)
-          final infoText =
-              '${i + 1}위. ${menu['name']}\n${menu['score']}점${menu['price'] != null && (menu['price'] as String).isNotEmpty ? ' • ${menu['price']}' : ''}';
-
-          final infoWindow = NInfoWindow.onMap(
-            id: 'info_$i',
-            text: infoText,
-            position: NLatLng(lat! + 0.0001, lng!), // 마커 위에 표시
-          );
-
-          // 정보창 클릭 이벤트 설정 (클릭 시 사라지도록)
-          infoWindow.setOnTapListener((NInfoWindow infoWindow) async {
-            await mapController.deleteOverlay(
-              NOverlayInfo(type: NOverlayType.infoWindow, id: 'info_$i'),
-            );
-            currentOpenInfoWindowId = null;
-          });
-
-          await mapController.addOverlay(infoWindow);
-          currentOpenInfoWindowId = 'info_$i';
-        });
       }
     }
   }
@@ -1373,9 +1470,14 @@ class _MapResultViewState extends State<MapResultView> {
     if (imagePath == null || imagePath.isEmpty) {
       return AssetImage('assets/image/default.png');
     } else if (imagePath.startsWith('http')) {
-      // 웹에서는 CORS 문제로 외부 이미지 사용 불가, 기본 이미지 사용
-      if (kIsWeb) {
-        return AssetImage('assets/image/default.png');
+      // 웹에서 네이버 이미지는 백엔드 프록시를 통해 제공
+      if (kIsWeb &&
+          (imagePath.contains('search.pstatic.net') ||
+              imagePath.contains('ldb-phinf.pstatic.net'))) {
+        final proxyUrl =
+            '${EnvConfig.apiBaseUrl}/proxy/image?url=${Uri.encodeComponent(imagePath)}';
+        print('웹에서 네이버 이미지 프록시 사용: $proxyUrl');
+        return NetworkImage(proxyUrl);
       }
       return NetworkImage(imagePath);
     } else {
@@ -1429,11 +1531,15 @@ class _MapResultViewState extends State<MapResultView> {
                 children: [
                   Row(
                     children: [
-                      Text(
-                        '${item['name'] ?? ''}',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
+                      Expanded(
+                        child: Text(
+                          '${item['store'] ?? item['name'] ?? ''}',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                       if (item['originalRank'] != null &&
@@ -1502,7 +1608,11 @@ class _MapResultViewState extends State<MapResultView> {
                   ? Icon(Icons.restaurant, color: Colors.grey[600])
                   : null,
         ),
-        title: Text('${item['name'] ?? ''}'),
+        title: Text(
+          '${item['store'] ?? item['name'] ?? ''}',
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -1558,11 +1668,33 @@ class _MapResultViewState extends State<MapResultView> {
       final lngValue = item['longitude'];
 
       if (latValue != null && lngValue != null) {
-        final lat = (latValue as num).toDouble();
-        final lng = (lngValue as num).toDouble();
+        // 안전한 타입 변환 - String이나 num 모두 처리
+        double? lat;
+        double? lng;
 
-        // 유효한 좌표인지 확인
-        if (!lat.isNaN && !lat.isInfinite && !lng.isNaN && !lng.isInfinite) {
+        try {
+          if (latValue is String) {
+            lat = double.tryParse(latValue);
+          } else if (latValue is num) {
+            lat = latValue.toDouble();
+          }
+
+          if (lngValue is String) {
+            lng = double.tryParse(lngValue);
+          } else if (lngValue is num) {
+            lng = lngValue.toDouble();
+          }
+        } catch (e) {
+          print('좌표 변환 실패: $e');
+          return;
+        }
+
+        if (lat != null &&
+            lng != null &&
+            !lat.isNaN &&
+            !lat.isInfinite &&
+            !lng.isNaN &&
+            !lng.isInfinite) {
           // 지도 카메라를 해당 위치로 이동
           await mapController.updateCamera(
             NCameraUpdate.withParams(
